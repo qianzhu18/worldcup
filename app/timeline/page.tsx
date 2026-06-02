@@ -1,0 +1,251 @@
+import { MATCHES, TEAMS, teamByCode } from "@/lib/worldcup";
+import { groupStageAnalysis } from "@/lib/model";
+import { getWorldCupMarkets } from "@/lib/polymarket";
+import { Flag } from "@/components/ui";
+import { Countdown } from "@/components/Countdown";
+import Link from "next/link";
+
+export default async function TimelinePage() {
+  const markets = await getWorldCupMarkets();
+  const winner = markets.find((market) => market.slug?.includes("winner")) ?? markets[0];
+  const codeByName = new Map(TEAMS.map((team) => [team.name, team.code]));
+  const marketByCode = new Map<string, number>();
+  if (winner) {
+    for (const outcome of winner.outcomes) {
+      const code = codeByName.get(outcome.label);
+      if (code) marketByCode.set(code, outcome.price);
+    }
+  }
+
+  const groupMatches = MATCHES.filter((m) => m.stage === "Group");
+  const byDay = new Map<string, typeof groupMatches>();
+  for (const match of groupMatches) {
+    const day = match.kickoff.slice(0, 10);
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day)!.push(match);
+  }
+
+  const days = [...byDay.entries()];
+  const final = MATCHES.find((m) => m.stage === "Final");
+  const totalEdges = groupMatches.map((m) => {
+    const p = groupStageAnalysis(m.home, m.away, marketByCode).adjusted;
+    return Math.max(p.home, p.draw, p.away) - Math.min(p.home, p.draw, p.away);
+  });
+  const maxEdge = Math.max(...totalEdges);
+
+  return (
+    <div className="space-y-6">
+      <section className="zen-panel relative overflow-hidden rounded-2xl p-5 md:p-6">
+        <div className="zen-scanline" aria-hidden />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mono text-[11px] uppercase tracking-[0.28em] text-emerald-300">schedule scanner</div>
+            <h1 className="mt-2 text-3xl font-black tracking-normal text-white md:text-4xl">
+              赛程时间线 <span className="zen-text">AI Queue</span>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+              按比赛日扫描小组赛，结合倒计时、场馆、胜平负概率和模型分歧，快速定位最值得关注的赛程窗口。
+            </p>
+            <div className="mt-4 max-w-3xl rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-3 text-xs leading-relaxed text-slate-300">
+              <span className="font-bold text-emerald-300">重点说明：</span>
+              AI 小组赛胜率由 Elo、FIFA 排名、主教练胜率、近一年战绩、核心球员评分共同调整；
+              Polymarket 当前可比项主要是“世界杯冠军盘”，页面用它作为球队市场热度和低估/高估代理，
+              不是单场胜平负盘口。
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:w-[420px]">
+            <ConsoleStat label="比赛日" value={String(days.length)} />
+            <ConsoleStat label="小组赛" value={String(groupMatches.length)} />
+            <ConsoleStat label="最大分歧" value={`${(maxEdge * 100).toFixed(0)}%`} accent />
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+        <aside className="zen-panel h-fit rounded-xl p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="zen-text text-sm font-bold">扫描索引</span>
+            <span className="live-dot h-2 w-2 rounded-full bg-emerald-300" />
+          </div>
+          <div className="space-y-2">
+            {days.map(([day, matches], index) => (
+              <a
+                key={day}
+                href={`#day-${day}`}
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+              >
+                <span className="mono w-8 text-xs text-emerald-300">D{String(index + 1).padStart(2, "0")}</span>
+                <span className="flex-1 text-xs text-slate-300">{fmtDate(day)}</span>
+                <span className="mono text-[11px] text-slate-500">{matches.length}场</span>
+              </a>
+            ))}
+          </div>
+        </aside>
+
+        <div className="space-y-5">
+          {days.map(([day, matches], dayIndex) => (
+            <section key={day} id={`day-${day}`} className="zen-panel scroll-mt-28 rounded-xl p-4">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-emerald-400/15 pb-3">
+                <div>
+                  <div className="mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
+                    matchday {String(dayIndex + 1).padStart(2, "0")}
+                  </div>
+                  <h2 className="mt-1 text-xl font-black text-white">{fmtDate(day)}</h2>
+                </div>
+                <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                  {matches.length} fixtures queued
+                </span>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {matches.map((match) => {
+                  const home = teamByCode(match.home)!;
+                  const away = teamByCode(match.away)!;
+                  const analysis = groupStageAnalysis(match.home, match.away, marketByCode);
+                  const p = analysis.adjusted;
+                  const favorite =
+                    p.home >= p.draw && p.home >= p.away
+                      ? home.zh
+                      : p.away >= p.home && p.away >= p.draw
+                        ? away.zh
+                        : "平局";
+                  const confidence = Math.max(p.home, p.draw, p.away);
+
+                  return (
+                    <Link
+                      key={match.id}
+                      href={`/match/${match.id}`}
+                      className="group relative overflow-hidden rounded-xl border border-white/10 bg-[#07121b]/82 p-4 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.08]"
+                    >
+                      <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-200">
+                            {match.group} 组
+                          </span>
+                          <span className="mono text-[11px] text-slate-500">{match.id.toUpperCase()}</span>
+                        </div>
+                        <span className="mono text-xs text-emerald-300">
+                          <Countdown to={match.kickoff} />
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                        <TeamCell code={home.code} name={home.zh} align="left" />
+                        <span className="mono text-sm font-bold text-white/35">VS</span>
+                        <TeamCell code={away.code} name={away.zh} align="right" />
+                      </div>
+
+                      <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                        <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>AI 胜平负 · 公平赔率</span>
+                          <span>倾向 {favorite} · {(confidence * 100).toFixed(0)}%</span>
+                        </div>
+                        <TripletBar home={p.home} draw={p.draw} away={p.away} />
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <OddsCell label={home.zh} value={analysis.fairOdds.home} />
+                          <OddsCell label="平局" value={analysis.fairOdds.draw} />
+                          <OddsCell label={away.zh} value={analysis.fairOdds.away} />
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <MarketProxy label={home.zh} value={analysis.market.home.marketChampion} edge={analysis.market.home.edge} />
+                        <MarketProxy label={away.zh} value={analysis.market.away.marketChampion} edge={analysis.market.away.edge} />
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+                        <span className="truncate">{match.venue}</span>
+                        <span className="shrink-0 text-slate-400">{match.city}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+
+          {final && (
+            <section className="zen-panel rounded-xl p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="mono text-[10px] uppercase tracking-[0.24em] text-emerald-300">final node</div>
+                  <div className="mt-1 text-lg font-black text-white">决赛 · {fmtDate(final.kickoff.slice(0, 10))}</div>
+                  <div className="text-sm text-slate-500">{final.venue} · {final.city}</div>
+                </div>
+                <Link href={`/match/${final.id}`} className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/15">
+                  查看决赛节点
+                </Link>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OddsCell({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-[#07121b]/70 px-2 py-1">
+      <div className="truncate text-[10px] text-slate-500">{label}</div>
+      <div className="mono text-xs font-bold text-emerald-300">{value.toFixed(2)}</div>
+    </div>
+  );
+}
+
+function MarketProxy({ label, value, edge }: { label: string; value?: number; edge?: number }) {
+  const hasEdge = edge !== undefined;
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] px-2 py-2">
+      <div className="truncate text-[10px] text-slate-500">{label} 冠军盘</div>
+      <div className="mt-0.5 flex items-center justify-between gap-2">
+        <span className="mono text-xs font-bold text-slate-200">{value === undefined ? "--" : `${(value * 100).toFixed(1)}%`}</span>
+        <span className={`mono text-[11px] font-bold ${hasEdge && edge >= 0 ? "text-emerald-300" : "text-violet-200"}`}>
+          {hasEdge ? `${edge >= 0 ? "+" : ""}${(edge * 100).toFixed(1)}%` : "n/a"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TeamCell({ code, name, align }: { code: string; name: string; align: "left" | "right" }) {
+  return (
+    <div className={`flex min-w-0 items-center gap-2 ${align === "right" ? "justify-end text-right" : ""}`}>
+      {align === "left" && <Flag code={code} className="h-6 w-9" />}
+      <span className="truncate text-sm font-semibold text-white">{name}</span>
+      {align === "right" && <Flag code={code} className="h-6 w-9" />}
+    </div>
+  );
+}
+
+function TripletBar({ home, draw, away }: { home: number; draw: number; away: number }) {
+  return (
+    <div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="bg-emerald-400" style={{ width: `${home * 100}%` }} />
+        <div className="bg-cyan-300" style={{ width: `${draw * 100}%` }} />
+        <div className="bg-violet-300" style={{ width: `${away * 100}%` }} />
+      </div>
+      <div className="mt-2 grid grid-cols-3 text-[11px]">
+        <span className="text-emerald-300">主胜 {(home * 100).toFixed(0)}%</span>
+        <span className="text-center text-cyan-200">平 {(draw * 100).toFixed(0)}%</span>
+        <span className="text-right text-violet-200">客胜 {(away * 100).toFixed(0)}%</span>
+      </div>
+    </div>
+  );
+}
+
+function ConsoleStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+      <div className="text-[10px] uppercase tracking-widest text-slate-500">{label}</div>
+      <div className={`mono mt-1 text-xl font-black ${accent ? "zen-text" : "text-white"}`}>{value}</div>
+    </div>
+  );
+}
+
+function fmtDate(d: string): string {
+  const date = new Date(d + "T00:00:00");
+  return date.toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" });
+}
