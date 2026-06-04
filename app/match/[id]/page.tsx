@@ -1,4 +1,9 @@
 import { MATCHES, TEAMS, matchById, teamByCode, headToHead, flag } from "@/lib/worldcup";
+
+export const revalidate = 300; // 5 min — matches have live odds
+export function generateStaticParams() {
+  return MATCHES.map((m) => ({ id: m.id }));
+}
 import { groupStageAnalysis, matchProbabilities, scoreMatrix } from "@/lib/model";
 import { playersByTeam, playerPhoto } from "@/lib/players";
 import { ProbBar, Flag, SectionTitle, Stat } from "@/components/ui";
@@ -9,9 +14,11 @@ import { formMarks, getTeamInsight } from "@/lib/team-insights";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function MatchPage({ params }: { params: { id: string } }) {
-  const m = matchById(params.id);
+export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const m = matchById(id);
   if (!m) return notFound();
+  if (!m.home || !m.away) return <BracketMatchPage match={m} />;
   const markets = await getWorldCupMarkets();
   const winner = markets.find((market) => market.slug?.includes("winner")) ?? markets[0];
   const codeByName = new Map(TEAMS.map((team) => [team.name, team.code]));
@@ -93,6 +100,52 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
                 </p>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="ai-why" className="zen-panel scroll-mt-28 rounded-2xl p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-emerald-400/15 pb-3">
+          <div>
+            <div className="mono text-[11px] uppercase tracking-[0.26em] text-emerald-300">why this probability</div>
+            <h2 className="mt-1 text-2xl font-black text-white">为什么倾向 {winnerName(h, a, p)}</h2>
+            <p className="mt-1 max-w-3xl text-sm text-slate-400">
+              这个胜率不是外部盘口，而是 JMWL 的本地模型：先用双方 Elo 算基础胜平负，再用教练胜率、近一年状态和球员池强度调整，最后展示 Polymarket 冠军盘作为市场热度代理。
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
+            {h.zh} {(p.home * 100).toFixed(0)}% · 平 {(p.draw * 100).toFixed(0)}% · {a.zh} {(p.away * 100).toFixed(0)}%
+          </span>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <WhyTeamCard
+            label={h.zh}
+            teamCode={h.code}
+            base={base.home}
+            adjusted={p.home}
+            factors={analysis.factors.home}
+            market={analysis.market.home.marketChampion}
+            edge={analysis.market.home.edge}
+          />
+          <WhyTeamCard
+            label={a.zh}
+            teamCode={a.code}
+            base={base.away}
+            adjusted={p.away}
+            factors={analysis.factors.away}
+            market={analysis.market.away.marketChampion}
+            edge={analysis.market.away.edge}
+          />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-[#07121b]/80 p-4">
+          <div className="mb-3 text-sm font-bold text-white">模型路径</div>
+          <div className="grid gap-3 md:grid-cols-4">
+            <ReasonStep title="1. 基础实力" body={`Elo 先给出 ${h.zh} ${(base.home * 100).toFixed(1)}%、平 ${(base.draw * 100).toFixed(1)}%、${a.zh} ${(base.away * 100).toFixed(1)}%。`} />
+            <ReasonStep title="2. 教练/近况" body="教练胜率、近一年胜平负、进失球差会转成 Elo 修正值。" />
+            <ReasonStep title="3. 球员池" body="该队球员评分均值和最高分会影响 squad boost，核心越强越加权。" />
+            <ReasonStep title="4. 市场对照" body="Polymarket 当前只作为冠军盘热度/低估高估代理，不当作本场胜平负盘口。" />
           </div>
         </div>
       </section>
@@ -195,7 +248,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
                   <p className="py-4 text-center text-sm text-slate-500">球员数据待接入</p>
                 ) : (
                   <div className="space-y-2">
-                    {ps.map((pl) => (
+                    {ps.slice(0, 8).map((pl) => (
                       <Link
                         key={pl.id}
                         href={`/player/${pl.id}`}
@@ -235,6 +288,124 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   );
 }
 
+function winnerName(
+  home: NonNullable<ReturnType<typeof teamByCode>>,
+  away: NonNullable<ReturnType<typeof teamByCode>>,
+  p: { home: number; draw: number; away: number },
+) {
+  if (p.draw >= p.home && p.draw >= p.away) return "平局";
+  return p.home >= p.away ? home.zh : away.zh;
+}
+
+function WhyTeamCard({
+  label,
+  teamCode,
+  base,
+  adjusted,
+  factors,
+  market,
+  edge,
+}: {
+  label: string;
+  teamCode: string;
+  base: number;
+  adjusted: number;
+  factors: { elo: number; coach: number; recent: number; squad: number; total: number };
+  market?: number;
+  edge?: number;
+}) {
+  const delta = adjusted - base;
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#07121b]/80 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Flag code={teamCode} className="h-5 w-7" />
+          <span className="font-black text-white">{label}</span>
+        </div>
+        <span className="mono text-lg font-black text-emerald-300">{(adjusted * 100).toFixed(1)}%</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <MiniStat label="基础胜率" value={`${(base * 100).toFixed(1)}%`} />
+        <MiniStat label="调整变化" value={`${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)}pt`} accent={delta >= 0} />
+        <MiniStat label="教练修正" value={`${factors.coach >= 0 ? "+" : ""}${factors.coach}`} />
+        <MiniStat label="近况修正" value={`${factors.recent >= 0 ? "+" : ""}${factors.recent}`} />
+        <MiniStat label="球员池修正" value={`${factors.squad >= 0 ? "+" : ""}${factors.squad}`} />
+        <MiniStat label="总修正 Elo" value={`${factors.total >= 0 ? "+" : ""}${factors.total}`} accent={factors.total >= 0} />
+      </div>
+      <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2">
+        <div className="text-[10px] uppercase tracking-widest text-slate-500">Polymarket 冠军盘代理</div>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <span className="mono text-sm font-bold text-slate-200">{market === undefined ? "暂无匹配" : `${(market * 100).toFixed(1)}%`}</span>
+          <span className={`mono text-xs font-bold ${edge !== undefined && edge >= 0 ? "text-emerald-300" : "text-violet-200"}`}>
+            {edge === undefined ? "n/a" : `${edge >= 0 ? "+" : ""}${(edge * 100).toFixed(1)}%`}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReasonStep({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+      <div className="text-xs font-bold text-emerald-300">{title}</div>
+      <div className="mt-1 text-xs leading-relaxed text-slate-400">{body}</div>
+    </div>
+  );
+}
+
+function BracketMatchPage({ match }: { match: NonNullable<ReturnType<typeof matchById>> }) {
+  return (
+    <div className="space-y-8">
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 pitch-stripes p-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-electric/10 via-transparent to-flame/10" />
+        <div className="relative text-center">
+          <div className="mb-4 flex items-center justify-center gap-2 text-sm text-slate-300">
+            <span className="chip bg-white/10">{stageLabel(match.stage)}</span>
+            <span>·</span>
+            <Countdown to={match.kickoff} />
+          </div>
+          <div className="grid grid-cols-3 items-center gap-4">
+            <BracketSide label={match.homeLabel ?? "TBD"} />
+            <div>
+              <div className="heading text-4xl gold-text">VS</div>
+              <div className="mt-2 text-xs text-slate-400">{match.venue}</div>
+              <div className="text-xs text-slate-500">{match.city}</div>
+            </div>
+            <BracketSide label={match.awayLabel ?? "TBD"} />
+          </div>
+        </div>
+      </section>
+
+      <section className="zen-panel rounded-2xl p-5">
+        <div className="mono text-[11px] uppercase tracking-[0.26em] text-emerald-300">bracket node</div>
+        <h2 className="mt-1 text-2xl font-black text-white">淘汰赛对阵待产生</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
+          这场比赛已纳入完整 104 场时间线，但双方参赛队要等前序比赛结果产生后才能确定。
+          球队确定后，这里会自动启用 AI 胜平负、公平赔率、Polymarket 冠军盘对比和球员对位分析。
+        </p>
+      </section>
+
+      <div className="text-center">
+        <Link href="/timeline" className="text-sm text-slate-400 hover:text-gold-300">
+          ← 返回时间线
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function BracketSide({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <span className="grid h-16 w-24 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-xs text-slate-400 shadow-card">
+        TBD
+      </span>
+      <div className="heading text-xl text-white">{label}</div>
+    </div>
+  );
+}
+
 function TeamSide({ team, align }: { team: ReturnType<typeof teamByCode>; align: "left" | "right" }) {
   if (!team) return null;
   return (
@@ -250,6 +421,18 @@ function TeamSide({ team, align }: { team: ReturnType<typeof teamByCode>; align:
       </div>
     </Link>
   );
+}
+
+function stageLabel(stage: string): string {
+  const labels: Record<string, string> = {
+    "Round of 32": "32 强",
+    "Round of 16": "16 强",
+    Quarterfinal: "1/4 决赛",
+    Semifinal: "半决赛",
+    "Third place": "三四名",
+    Final: "决赛",
+  };
+  return labels[stage] ?? stage;
 }
 
 function CompareRow({ label, base, adjusted, odds }: { label: string; base: number; adjusted: number; odds: number }) {
@@ -332,11 +515,11 @@ function CoachAndForm({
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2">
       <div className="mono text-[9px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className="mono text-sm font-bold text-emerald-300">{value}</div>
+      <div className={`mono text-sm font-bold ${accent ? "text-emerald-300" : "text-slate-200"}`}>{value}</div>
     </div>
   );
 }

@@ -3,10 +3,17 @@ import { TEAMS } from "./worldcup";
 
 const GAMMA = "https://gamma-api.polymarket.com";
 
-export type Outcome = { label: string; price: number };
+export type Outcome = {
+  label: string;
+  price: number;
+  question?: string;
+  url?: string;
+  volume?: number;
+  liquidity?: number;
+};
 export type Market = {
   id: string;
-  platform: "Polymarket" | "Binance" | "OKX";
+  platform: "Polymarket";
   title: string;
   slug: string;
   url: string;
@@ -55,7 +62,14 @@ function eventToMarket(ev: any): Market {
       const labels = parseArr(m.outcomes);
       const prices = parseArr(m.outcomePrices).map(Number);
       const label = m.groupItemTitle || labels[0] || m.question || "—";
-      return { label, price: prices[0] ?? 0 };
+      return {
+        label,
+        price: prices[0] ?? 0,
+        question: m.question,
+        url: m.slug ? `https://polymarket.com/zh/event/${ev.slug}/${m.slug}` : `https://polymarket.com/zh/event/${ev.slug}`,
+        volume: Number(m.volume ?? 0),
+        liquidity: Number(m.liquidity ?? 0),
+      };
     })
     .filter((o) => o.price > 0)
     .sort((a, b) => b.price - a.price);
@@ -121,8 +135,8 @@ export async function getWorldCupMarkets(): Promise<Market[]> {
   return out.sort((a, b) => b.heat - a.heat);
 }
 
-// Cross-platform price-divergence radar. Polymarket implied probability vs our
-// model's champion probability — surfaces potential value bets / mispricing.
+// Polymarket implied probability vs our model's champion probability — surfaces
+// potential value bets / mispricing without mixing in other venues.
 export function divergenceSignals(
   market: Market,
   modelProb: (teamName: string) => number
@@ -143,49 +157,4 @@ export function divergenceSignals(
 
 export function teamNameSet(): Set<string> {
   return new Set(TEAMS.map((t) => t.name));
-}
-
-// Cross-platform price-divergence radar.
-// Anchored on REAL Polymarket prices; Binance/OKX columns are ILLUSTRATIVE
-// (deterministic offsets) until those venues' APIs are wired in. The point is to
-// demonstrate the arbitrage/价差 surface — biggest spread floats to the top.
-export type CrossRow = {
-  label: string;
-  code?: string;
-  polymarket: number;
-  binance: number;
-  okx: number;
-  best: "Polymarket" | "Binance" | "OKX";
-  spread: number; // max-min, in probability points
-};
-
-export function crossPlatformSpread(market: Market): CrossRow[] {
-  const nameToCode = new Map(TEAMS.map((t) => [t.name, t.code]));
-  const rows = market.outcomes.slice(0, 8).map((o) => {
-    // deterministic pseudo-offsets seeded by label length & first char
-    const seed = (o.label.charCodeAt(0) + o.label.length) % 7;
-    const bOff = ((seed % 3) - 1) * 0.018 - 0.006;
-    const oOff = ((seed % 5) - 2) * 0.012 + 0.004;
-    const binance = clamp(o.price + bOff);
-    const okx = clamp(o.price + oOff);
-    const prices = { Polymarket: o.price, Binance: binance, OKX: okx } as const;
-    const best = (Object.keys(prices) as (keyof typeof prices)[]).reduce((a, b) =>
-      prices[a] <= prices[b] ? a : b
-    );
-    const vals = [o.price, binance, okx];
-    return {
-      label: o.label,
-      code: nameToCode.get(o.label),
-      polymarket: o.price,
-      binance,
-      okx,
-      best,
-      spread: Math.max(...vals) - Math.min(...vals),
-    };
-  });
-  return rows.sort((a, b) => b.spread - a.spread);
-}
-
-function clamp(v: number): number {
-  return Math.max(0.005, Math.min(0.995, v));
 }

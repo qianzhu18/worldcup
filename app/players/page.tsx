@@ -1,15 +1,43 @@
 import { PLAYERS, playerPhoto } from "@/lib/players";
 import { teamByCode, flag } from "@/lib/worldcup";
+import { modelChampionFor } from "@/lib/model";
 import Link from "next/link";
 
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 const ATTR_LABELS = ["速", "射", "传", "盘", "防", "体"];
+const STAR_PRIOR: Record<string, number> = {
+  "Kylian Mbappé": 14,
+  "Lamine Yamal": 12,
+  "Lionel Messi": 11,
+  "Jude Bellingham": 10,
+  "Erling Haaland": 10,
+  "Vinícius Júnior": 9,
+  "Vinicius Junior": 9,
+  "Cristiano Ronaldo": 8,
+  "Rodri": 8,
+  "Harry Kane": 8,
+  "Bukayo Saka": 7,
+  "Florian Wirtz": 7,
+  "Jamal Musiala": 7,
+  "Pedri": 7,
+  "Raphinha": 7,
+  "Mohamed Salah": 7,
+  "Christian Pulisic": 6,
+};
+
+const MAX_DISPLAY = 60; // Keep page render fast within Workers CPU limits
 
 export default function PlayersPage() {
-  const ranked = [...PLAYERS].sort((a, b) => b.rating - a.rating);
+  const allRanked = [...PLAYERS]
+    .map((player) => ({ ...player, watchScore: playerWatchScore(player) }))
+    .sort((a, b) => b.watchScore - a.watchScore || b.rating - a.rating);
+  const ranked = allRanked.slice(0, MAX_DISPLAY);
   const leader = ranked[0];
-  const avgRating = ranked.reduce((sum, player) => sum + player.rating, 0) / ranked.length;
-  const totalGoals = ranked.reduce((sum, player) => sum + player.stats.goals, 0);
-  const roleCounts = ranked.reduce<Record<string, number>>((acc, player) => {
+  const avgRating = allRanked.reduce((sum, player) => sum + player.rating, 0) / allRanked.length;
+  const totalGoals = allRanked.reduce((sum, player) => sum + player.stats.goals, 0);
+  const roleCounts = allRanked.reduce<Record<string, number>>((acc, player) => {
     acc[player.position] = (acc[player.position] ?? 0) + 1;
     return acc;
   }, {});
@@ -22,10 +50,10 @@ export default function PlayersPage() {
           <div>
             <div className="mono text-[11px] uppercase tracking-[0.28em] text-emerald-300">player scanner</div>
             <h1 className="mt-2 text-3xl font-black tracking-normal text-white md:text-4xl">
-              球员 <span className="zen-text">Form Matrix</span>
+              球员 <span className="zen-text">Watchlist Rank</span>
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              以综合评分为主序，叠加国家、位置、俱乐部、技术标签和六维能力，把球星列表改成可扫描的数据矩阵。
+              按 JMWL 看好指数排序：球员评分、所在队夺冠概率、位置影响和六维能力峰值共同加权，排出最值得关注的球员。
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -41,7 +69,7 @@ export default function PlayersPage() {
           <div className="mb-3 flex items-center justify-between border-b border-emerald-400/15 pb-3">
             <div>
               <div className="mono text-[10px] uppercase tracking-[0.24em] text-slate-500">top signal</div>
-              <div className="mt-1 text-lg font-black text-white">最高状态节点</div>
+              <div className="mt-1 text-lg font-black text-white">最被看好球员</div>
             </div>
             <span className="live-dot h-2 w-2 rounded-full bg-emerald-300" />
           </div>
@@ -53,7 +81,7 @@ export default function PlayersPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={playerPhoto(leader)} alt={leader.name} className="h-20 w-20 rounded-2xl bg-[#0b1322] object-cover ring-2 ring-emerald-400/25" />
                   <span className="mono absolute -bottom-2 -right-2 grid h-10 w-10 place-items-center rounded-xl border border-emerald-400/30 bg-[#07121b] text-sm font-black text-emerald-300">
-                    {leader.rating.toFixed(1)}
+                    {leader.watchScore.toFixed(0)}
                   </span>
                 </div>
                 <div className="min-w-0">
@@ -68,9 +96,9 @@ export default function PlayersPage() {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <SmallStat label="goals" value={String(leader.stats.goals)} />
-                <SmallStat label="assists" value={String(leader.stats.assists)} />
-                <SmallStat label="xg" value={leader.stats.xg.toFixed(1)} />
+                <SmallStat label="rating" value={leader.rating.toFixed(1)} />
+                <SmallStat label="team prob" value={`${(modelChampionFor(leader.team) * 100).toFixed(1)}%`} />
+                <SmallStat label="watch" value={leader.watchScore.toFixed(0)} />
               </div>
             </Link>
           )}
@@ -125,8 +153,8 @@ export default function PlayersPage() {
                         </div>
                       </div>
                       <div className="mono text-right">
-                        <div className="zen-text text-2xl font-black">{player.rating.toFixed(1)}</div>
-                        <div className="text-[10px] uppercase tracking-wider text-slate-500">rating</div>
+                        <div className="zen-text text-2xl font-black">{player.watchScore.toFixed(0)}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500">watch</div>
                       </div>
                     </div>
 
@@ -143,7 +171,7 @@ export default function PlayersPage() {
                 <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-3">
                   <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
                     <span>能力向量</span>
-                    <span>peak {primaryAttr}</span>
+                    <span>rating {player.rating.toFixed(1)} · peak {primaryAttr}</span>
                   </div>
                   <div className="grid grid-cols-6 gap-1.5">
                     {player.attrs.map((attr, attrIndex) => (
@@ -166,6 +194,16 @@ export default function PlayersPage() {
       </div>
     </div>
   );
+}
+
+function playerWatchScore(player: (typeof PLAYERS)[number]): number {
+  const teamProb = modelChampionFor(player.team);
+  const peak = Math.max(...player.attrs);
+  const roleBonus = player.position === "FW" ? 5 : player.position === "MF" ? 3 : player.position === "GK" ? 1 : 0;
+  const youthUpside = player.age <= 23 ? 2 : player.age >= 34 ? -1.5 : 0;
+  const clubSignal = /Madrid|Barcelona|Bayern|Manchester|Liverpool|Arsenal|Chelsea|Paris|Milan|Inter|Juventus|Napoli|Dortmund|PSG/i.test(player.club) ? 2 : 0;
+  const starPrior = STAR_PRIOR[player.name] ?? 0;
+  return player.rating * 8 + teamProb * 120 + (peak - 80) * 0.35 + roleBonus + youthUpside + clubSignal + starPrior;
 }
 
 function TeamFlag({ code }: { code: string }) {

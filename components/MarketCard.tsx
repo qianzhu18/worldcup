@@ -1,6 +1,8 @@
 import type { Market } from "@/lib/polymarket";
 import { HeatBadge } from "./ui";
-import { teamByCode, TEAMS, flag } from "@/lib/worldcup";
+import { TEAMS, flag } from "@/lib/worldcup";
+import { modelChampionFor } from "@/lib/model";
+import { formatSignedPct, recommendYesNo } from "@/lib/trade-recommendation";
 
 function codeForName(name: string): string | undefined {
   return TEAMS.find((t) => t.name === name || t.zh === name)?.code;
@@ -10,6 +12,8 @@ export function MarketCard({ market, rank }: { market: Market; rank: number }) {
   const top = market.outcomes.slice(0, 4);
   const hot = market.heat >= 60;
   const leading = top[0];
+  const leadingModel = leading ? modelForOutcome(leading.label) : 0;
+  const leadingRec = leading && leadingModel > 0 ? recommendYesNo(leadingModel, leading.price) : undefined;
   const confidence = Math.min(0.98, 0.55 + market.heat / 180);
   return (
     <a
@@ -59,28 +63,56 @@ export function MarketCard({ market, rank }: { market: Market; rank: number }) {
             <span className="flex-1 truncate text-sm font-semibold text-slate-100">{leading.label}</span>
             <span className="mono text-lg font-black text-emerald-300">{(leading.price * 100).toFixed(1)}%</span>
           </div>
+          {leadingRec ? (
+            <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[11px] text-slate-400">
+                  AI {(leadingModel * 100).toFixed(1)}% · 市场 {(leading.price * 100).toFixed(1)}%
+                </span>
+                <TradeBadge label={leadingRec.label} tone={leadingRec.tone} />
+              </div>
+              <div className="mt-1 text-[11px] text-slate-500">{leadingRec.reason}</div>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 text-[11px] text-slate-500">
+              该盘口暂无可匹配 AI 胜率，先不输出 YES/NO。
+            </div>
+          )}
         </div>
       )}
 
       <div className="space-y-2">
         {top.map((o) => {
           const code = codeForName(o.label);
+          const model = modelForOutcome(o.label);
+          const rec = model > 0 ? recommendYesNo(model, o.price) : undefined;
           return (
-            <div key={o.label} className="flex items-center gap-2">
+            <div key={o.label} className="grid grid-cols-[auto_minmax(0,1fr)_3.5rem_4.5rem] items-center gap-2">
               {code && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={flag(code)} alt="" className="h-3.5 w-5 rounded-[2px] object-cover" />
               )}
-              <span className="w-28 truncate text-xs text-slate-300">{o.label}</span>
-              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300"
-                  style={{ width: `${Math.min(100, o.price * 100)}%` }}
-                />
+              {!code && <span className="h-3.5 w-5" />}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-24 truncate text-xs text-slate-300">{o.label}</span>
+                  <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300"
+                      style={{ width: `${Math.min(100, o.price * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                {rec && (
+                  <div className="mt-0.5 text-[10px] text-slate-500">
+                    AI {(model * 100).toFixed(1)}% · edge {formatSignedPct(rec.edge)}
+                  </div>
+                )}
               </div>
               <span className="mono w-12 text-right text-xs font-semibold tabular-nums text-emerald-300">
                 {(o.price * 100).toFixed(1)}%
               </span>
+              {rec ? <TradeBadge label={rec.action} tone={rec.tone} compact /> : <span className="text-right text-[10px] text-slate-600">--</span>}
             </div>
           );
         })}
@@ -92,6 +124,33 @@ export function MarketCard({ market, rank }: { market: Market; rank: number }) {
         <Metric label="状态" value={hot ? "扫描" : "观察"} accent={hot} />
       </div>
     </a>
+  );
+}
+
+function modelForOutcome(label: string): number {
+  const code = codeForName(label);
+  return code ? modelChampionFor(code) : 0;
+}
+
+function TradeBadge({
+  label,
+  tone,
+  compact,
+}: {
+  label: string;
+  tone: "yes" | "no" | "watch";
+  compact?: boolean;
+}) {
+  const cls =
+    tone === "yes"
+      ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-300"
+      : tone === "no"
+        ? "border-orange-400/35 bg-orange-400/12 text-orange-300"
+        : "border-slate-500/30 bg-slate-500/10 text-slate-300";
+  return (
+    <span className={`rounded-full border font-black ${compact ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"} ${cls}`}>
+      {label}
+    </span>
   );
 }
 

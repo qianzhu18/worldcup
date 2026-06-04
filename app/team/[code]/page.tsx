@@ -1,4 +1,9 @@
-import { teamByCode, teamsInGroup, flag, MATCHES } from "@/lib/worldcup";
+import { TEAMS, teamByCode, teamsInGroup, flag, MATCHES } from "@/lib/worldcup";
+
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return TEAMS.map((t) => ({ code: t.code }));
+}
 import { modelChampionFor } from "@/lib/model";
 import { playersByTeam, playerPhoto } from "@/lib/players";
 import { SectionTitle, Flag, Stat } from "@/components/ui";
@@ -6,8 +11,9 @@ import { formMarks, getTeamInsight } from "@/lib/team-insights";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default function TeamPage({ params }: { params: { code: string } }) {
-  const t = teamByCode(params.code);
+export default async function TeamPage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params;
+  const t = teamByCode(code);
   if (!t) return notFound();
   const players = playersByTeam(t.code);
   const groupMates = teamsInGroup(t.group);
@@ -137,8 +143,9 @@ export default function TeamPage({ params }: { params: { code: string } }) {
           <section>
             <SectionTitle>⚽ 赛程</SectionTitle>
             <div className="card divide-y divide-white/5">
-              {fixtures.map((f) => {
-                const opp = teamByCode(f.home === t.code ? f.away : f.home)!;
+              {fixtures.filter((f) => f.home && f.away).map((f) => {
+                const oppCode = f.home === t.code ? f.away! : f.home!;
+                const opp = teamByCode(oppCode)!;
                 return (
                   <Link key={f.id} href={`/match/${f.id}`} className="flex items-center gap-2 px-4 py-2.5 transition hover:bg-white/5">
                     <Flag code={opp.code} className="h-5 w-7" />

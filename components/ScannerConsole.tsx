@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { recommendYesNo } from "@/lib/trade-recommendation";
 
 type ScannerConsoleProps = {
   marketsCount: number;
   totalVolume: number;
   teamsCount: number;
   topSignals: { label: string; market: number; model: number; edge: number }[];
+  kickoff: string;
+  openingMatch: string;
+  openingVenue: string;
 };
 
 const intervals = [
@@ -21,12 +25,16 @@ export function ScannerConsole({
   totalVolume,
   teamsCount,
   topSignals,
+  kickoff,
+  openingMatch,
+  openingVenue,
 }: ScannerConsoleProps) {
   const [scanning, setScanning] = useState(true);
   const [intervalValue, setIntervalValue] = useState("5");
   const [lastScan, setLastScan] = useState("");
   const [lines, setLines] = useState<string[]>([]);
   const cursor = useRef(0);
+  const countdown = useCountdown(kickoff);
 
   const signals = useMemo(
     () =>
@@ -61,41 +69,62 @@ export function ScannerConsole({
   }, [scanning, signals, intervalValue]);
 
   const bestEdge = Math.max(...signals.map((s) => s.edge), 0);
+  const modelLeader = [...signals].sort((a, b) => b.model - a.model)[0];
 
   return (
-    <section className="zen-panel relative overflow-hidden rounded-2xl p-5 md:p-6">
+    <section className="zen-panel relative overflow-hidden rounded-2xl p-5 md:p-7">
       <div className="zen-scanline" aria-hidden />
-      <div className="relative grid gap-5 lg:grid-cols-[1.25fr_0.95fr]">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <CyberAvatar />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent"
+        aria-hidden
+      />
+      <div className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" aria-hidden />
+      <div className="relative grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="flex min-w-0 flex-col">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="zen-text text-2xl font-extrabold tracking-normal">World Cup Zen</span>
-                <span className="rounded border border-emerald-400/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
-                  WC 2026
-                </span>
+                <span className="zen-text text-2xl font-extrabold tracking-normal">AI 扫描控制台</span>
+                <span className="live-dot h-2 w-2 rounded-full bg-emerald-300" />
               </div>
               <p className="mt-1 text-sm text-slate-400">
-                AI 跨平台预测市场扫描引擎 · Polymarket / Binance / OKX
+                赛前倒计时 · 市场隐含概率 · AI 胜率差值
               </p>
+            </div>
+            <span className="rounded border border-emerald-400/30 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+              live model
+            </span>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-emerald-400/20 bg-[#06131e]/80 p-4 shadow-[0_0_38px_rgba(39,245,138,0.08)]">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">
+                  Countdown to kickoff
+                </div>
+                <h2 className="mt-2 text-xl font-black text-white md:text-2xl">AI 扫描世界杯倒计时</h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  {openingMatch} · {openingVenue}
+                </p>
+              </div>
+              <span className="rounded-full border border-gold-300/30 bg-gold-300/10 px-3 py-1 text-xs font-bold text-gold-300">
+                AI 赛前扫描中
+              </span>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <CountdownLine countdown={countdown} />
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {["实时盘口", "AI 独立定价", "价差检测", "风险核验"].map((item) => (
-              <span key={item} className="rounded-full border border-emerald-400/25 px-3 py-1 text-xs text-emerald-200/90">
-                {item}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ScannerStat label="活跃盘口" value={String(marketsCount)} />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ScannerStat label="扫描盘口" value={String(marketsCount)} />
             <ScannerStat label="总成交" value={`$${abbr(totalVolume)}`} />
             <ScannerStat label="参赛队" value={String(teamsCount)} />
-            <ScannerStat label="最佳错价" value={`+${(bestEdge * 100).toFixed(1)}%`} accent />
+            <ScannerStat label="最大胜率差" value={`+${(bestEdge * 100).toFixed(1)}%`} accent />
           </div>
+
+          <DecisionPanel signals={signals} />
         </div>
 
         <div className="rounded-xl border border-emerald-400/20 bg-[#07121b]/90 p-4">
@@ -154,6 +183,30 @@ export function ScannerConsole({
               <div className="text-slate-600">AI 推理引擎离线，等待恢复扫描。</div>
             )}
           </div>
+
+          <div className="mt-4 border-t border-slate-700/50 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-300">
+                  AI win-rate analysis
+                </div>
+                <div className="mt-1 text-sm font-black text-white">胜率分析 Top Signals</div>
+              </div>
+              {modelLeader && (
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">模型领跑</div>
+                  <div className="text-sm font-bold text-gold-300">
+                    {modelLeader.label} {(modelLeader.model * 100).toFixed(1)}%
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 space-y-2">
+              {signals.slice(0, 3).map((signal) => (
+                <AiWinRateCard key={signal.label} signal={signal} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -169,35 +222,198 @@ function ScannerStat({ label, value, accent }: { label: string; value: string; a
   );
 }
 
-function CyberAvatar() {
+function CountdownLine({ countdown }: { countdown: ReturnType<typeof useCountdown> }) {
   return (
-    <svg width="48" height="48" viewBox="0 0 100 100" fill="none" className="zen-glow rounded-xl">
-      <defs>
-        <linearGradient id="zenAvatarBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#0B2230" />
-          <stop offset="1" stopColor="#06121A" />
-        </linearGradient>
-        <radialGradient id="zenAvatarEye" cx="50%" cy="50%">
-          <stop offset="0" stopColor="#CFFFE6" />
-          <stop offset="1" stopColor="#27F58A" />
-        </radialGradient>
-      </defs>
-      <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#zenAvatarBg)" stroke="#27F58A" strokeOpacity=".55" />
-      <path
-        d="M34 78 C26 70 24 56 28 44 C32 30 44 22 56 24 C70 26 78 38 76 52 C75 60 70 64 70 70 L70 80"
-        stroke="#1FB877"
-        strokeWidth="2.2"
-        fill="#0A1B26"
-      />
-      <path d="M30 46 L60 41 L60 52 L31 56 Z" fill="#27F58A" fillOpacity=".22" stroke="#27F58A" strokeWidth="1.4" />
-      <circle cx="44" cy="49" r="3" fill="url(#zenAvatarEye)" />
-      <path d="M56 60 L52 66 L60 72 M62 56 L72 56 M58 64 L66 64" stroke="#27F58A" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="72" cy="56" r="2" fill="#13E0C4" />
-      <rect x="78" y="30" width="7" height="5" fill="#27F58A" fillOpacity=".5" />
-      <rect x="82" y="40" width="5" height="4" fill="#13E0C4" fillOpacity=".6" />
-      <rect x="80" y="62" width="6" height="5" fill="#27F58A" fillOpacity=".4" />
-    </svg>
+    <div className="tabular-nums text-4xl font-light tracking-normal md:text-5xl">
+      <span className="font-medium text-gold-300">{countdown ? `${countdown.days}天` : "--天"}</span>
+      <span className="ml-3 text-slate-200">
+        {countdown
+          ? `${String(countdown.hours).padStart(2, "0")}:${String(countdown.minutes).padStart(2, "0")}:${String(
+              countdown.seconds,
+            ).padStart(2, "0")}`
+          : "--:--:--"}
+      </span>
+    </div>
   );
+}
+
+function DecisionPanel({
+  signals,
+}: {
+  signals: { label: string; market: number; model: number; edge: number }[];
+}) {
+  const ranked = [...signals]
+    .map((signal) => ({ signal, rec: recommendYesNo(signal.model, signal.market) }))
+    .sort((a, b) => Math.abs(b.rec.edge) - Math.abs(a.rec.edge))
+    .slice(0, 3);
+
+  return (
+    <div className="mt-4 flex-1 rounded-xl border border-emerald-400/15 bg-[#07121b]/72 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">
+            YES / NO decision
+          </div>
+          <div className="mt-1 text-lg font-black text-white">交易动作决策台</div>
+        </div>
+        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-slate-400">
+          阈值 2pt · 扣除手续费缓冲
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="grid gap-2">
+          <RulePill
+            label="买 YES"
+            tone="yes"
+            text="AI 胜率高于市场价 2pt 以上"
+          />
+          <RulePill
+            label="买 NO"
+            tone="no"
+            text="AI 胜率低于市场价 2pt 以上"
+          />
+          <RulePill
+            label="观望"
+            tone="watch"
+            text="差值太小，可能被点差和手续费吃掉"
+          />
+        </div>
+
+        <div className="space-y-2">
+          {ranked.map(({ signal, rec }) => (
+            <div key={signal.label} className="rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold text-white">{signal.label}</div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">
+                    市场 {(signal.market * 100).toFixed(1)}% · AI {(signal.model * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`tabular-nums text-sm font-black ${
+                      rec.tone === "yes"
+                        ? "text-emerald-300"
+                        : rec.tone === "no"
+                          ? "text-orange-300"
+                          : "text-slate-300"
+                    }`}
+                  >
+                    {rec.edge > 0 ? "+" : ""}
+                    {(rec.edge * 100).toFixed(1)}%
+                  </span>
+                  <ActionBadge label={rec.label} tone={rec.tone} />
+                </div>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className={`h-full rounded-full ${rec.tone === "yes" ? "bg-emerald-300" : rec.tone === "no" ? "bg-orange-400" : "bg-slate-500"}`}
+                  style={{ width: `${Math.min(100, Math.max(8, Math.abs(rec.edge) * 900))}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RulePill({
+  label,
+  text,
+  tone,
+}: {
+  label: string;
+  text: string;
+  tone: "yes" | "no" | "watch";
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <ActionBadge label={label} tone={tone} />
+      </div>
+      <div className="mt-2 text-[11px] leading-relaxed text-slate-400">{text}</div>
+    </div>
+  );
+}
+
+function ActionBadge({ label, tone }: { label: string; tone: "yes" | "no" | "watch" }) {
+  const cls =
+    tone === "yes"
+      ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-300"
+      : tone === "no"
+        ? "border-orange-400/35 bg-orange-400/12 text-orange-300"
+        : "border-slate-500/30 bg-slate-500/10 text-slate-300";
+
+  return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${cls}`}>{label}</span>;
+}
+
+function AiWinRateCard({
+  signal,
+}: {
+  signal: { label: string; market: number; model: number; edge: number };
+}) {
+  const rec = recommendYesNo(signal.model, signal.market);
+  const positive = rec.tone === "yes";
+  const modelPct = Math.max(4, Math.min(100, signal.model * 100));
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold text-white">{signal.label}</div>
+          <div className="mt-0.5 text-[11px] text-slate-500">
+            市场 {(signal.market * 100).toFixed(1)}% · AI {(signal.model * 100).toFixed(1)}%
+          </div>
+        </div>
+        <div className={`text-right text-sm font-black tabular-nums ${rec.tone === "yes" ? "text-emerald-300" : rec.tone === "no" ? "text-orange-300" : "text-slate-300"}`}>
+          {signal.edge > 0 ? "+" : ""}
+          {(signal.edge * 100).toFixed(1)}%
+        </div>
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-500">
+        <span>{rec.reason}</span>
+        <span
+          className={`shrink-0 rounded-full border px-2 py-0.5 font-black ${
+            rec.tone === "yes"
+              ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-300"
+              : rec.tone === "no"
+                ? "border-orange-400/35 bg-orange-400/12 text-orange-300"
+                : "border-slate-500/30 bg-slate-500/10 text-slate-300"
+          }`}
+        >
+          {rec.label}
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
+        <div
+          className={`h-full rounded-full ${positive ? "bg-emerald-300" : "bg-orange-400"}`}
+          style={{ width: `${modelPct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function useCountdown(to: string) {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  if (now === null) return null;
+  const diff = Math.max(0, new Date(to).getTime() - now);
+  return {
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    minutes: Math.floor((diff % 3600000) / 60000),
+    seconds: Math.floor((diff % 60000) / 1000),
+  };
 }
 
 function abbr(n: number): string {

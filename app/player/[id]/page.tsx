@@ -1,12 +1,19 @@
-import { playerById, playerPhoto } from "@/lib/players";
+import { PLAYERS, playerById, playerPhoto } from "@/lib/players";
 import { teamByCode, flag } from "@/lib/worldcup";
 import { Radar } from "@/components/Radar";
 import { SectionTitle, Flag, Stat } from "@/components/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default function PlayerPage({ params }: { params: { id: string } }) {
-  const p = playerById(params.id);
+export const revalidate = 3600;
+export function generateStaticParams() {
+  // Pre-render first 200 players; the rest are served on-demand + cached.
+  return PLAYERS.slice(0, 200).map((p) => ({ id: p.id }));
+}
+
+export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const p = playerById(id);
   if (!p) return notFound();
   const t = teamByCode(p.team)!;
 

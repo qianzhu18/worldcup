@@ -1,5 +1,7 @@
-// Curated star players. Portraits use local SVG caricatures so the UI has stable
-// player-specific visual identity without relying on licensed photography.
+// Player pool generated from public World Cup 2026 squad pages. Portraits use
+// local SVG caricatures so the UI has stable visual identity without relying on
+// licensed photography.
+import { GENERATED_PLAYERS } from "./generated/player-data";
 
 export type Player = {
   id: string;
@@ -18,48 +20,7 @@ export type Player = {
   stats: { apps: number; goals: number; assists: number; xg: number };
 };
 
-export const PLAYERS: Player[] = [
-  {
-    id: "messi", name: "Lionel Messi", zh: "梅西", team: "ar", number: 10, position: "FW",
-    age: 38, club: "Inter Miami", rating: 8.9, styleTags: ["组织核心", "定位球大师", "致命直塞"],
-    attrs: [78, 90, 94, 95, 38, 65], stats: { apps: 5, goals: 4, assists: 3, xg: 3.1 },
-  },
-  {
-    id: "mbappe", name: "Kylian Mbappé", zh: "姆巴佩", team: "fr", number: 10, position: "FW",
-    age: 27, club: "Real Madrid", rating: 9.1, styleTags: ["极速冲击", "反击杀手", "左路爆点"],
-    attrs: [97, 92, 82, 93, 40, 80], stats: { apps: 5, goals: 6, assists: 2, xg: 4.4 },
-  },
-  {
-    id: "yamal", name: "Lamine Yamal", zh: "亚马尔", team: "es", number: 19, position: "FW",
-    age: 18, club: "FC Barcelona", rating: 8.7, styleTags: ["边路爆破", "内切射门", "天才少年"],
-    attrs: [90, 84, 86, 94, 42, 62], stats: { apps: 5, goals: 3, assists: 5, xg: 2.6 },
-  },
-  {
-    id: "bellingham", name: "Jude Bellingham", zh: "贝林厄姆", team: "gb-eng", number: 10, position: "MF",
-    age: 22, club: "Real Madrid", rating: 8.6, styleTags: ["B2B中场", "后插上得分", "强壮持球"],
-    attrs: [82, 85, 87, 88, 72, 86], stats: { apps: 5, goals: 3, assists: 2, xg: 2.2 },
-  },
-  {
-    id: "ronaldo", name: "Cristiano Ronaldo", zh: "C罗", team: "pt", number: 7, position: "FW",
-    age: 41, club: "Al Nassr", rating: 8.0, styleTags: ["禁区杀手", "头球威胁", "任意球"],
-    attrs: [80, 91, 78, 82, 35, 84], stats: { apps: 5, goals: 5, assists: 1, xg: 4.0 },
-  },
-  {
-    id: "haaland", name: "Erling Haaland", zh: "哈兰德", team: "no", number: 9, position: "FW",
-    age: 25, club: "Manchester City", rating: 8.8, styleTags: ["禁区猛兽", "无球跑位", "身体碾压"],
-    attrs: [89, 94, 70, 80, 45, 93], stats: { apps: 4, goals: 5, assists: 0, xg: 5.2 },
-  },
-  {
-    id: "vinicius", name: "Vinícius Jr.", zh: "维尼修斯", team: "br", number: 7, position: "FW",
-    age: 25, club: "Real Madrid", rating: 8.4, styleTags: ["左路过人", "高速突破", "制造点球"],
-    attrs: [95, 84, 80, 93, 38, 74], stats: { apps: 5, goals: 3, assists: 4, xg: 2.9 },
-  },
-  {
-    id: "debruyne", name: "Kevin De Bruyne", zh: "德布劳内", team: "be", number: 17, position: "MF",
-    age: 34, club: "Napoli", rating: 8.3, styleTags: ["大师级传球", "弧线传中", "远射"],
-    attrs: [72, 86, 96, 85, 60, 78], stats: { apps: 4, goals: 1, assists: 6, xg: 1.4 },
-  },
-];
+export const PLAYERS: Player[] = GENERATED_PLAYERS;
 
 export function playerById(id: string): Player | undefined {
   return PLAYERS.find((p) => p.id === id);
@@ -82,18 +43,18 @@ type PortraitConfig = {
 };
 
 const PORTRAITS: Record<string, PortraitConfig> = {
-  messi: { skin: "#d79a68", hair: "#3b2418", shirt: "#6bd8ff", accent: "#ffffff", hairStyle: "crop", beard: true, label: "10" },
-  mbappe: { skin: "#7b4a32", hair: "#171717", shirt: "#284dff", accent: "#ff3b3b", hairStyle: "fade", label: "10" },
-  yamal: { skin: "#a86a43", hair: "#171717", shirt: "#d62633", accent: "#243dff", hairStyle: "curls", label: "19" },
-  bellingham: { skin: "#6f412c", hair: "#151515", shirt: "#ffffff", accent: "#d92626", hairStyle: "curls", label: "10" },
-  ronaldo: { skin: "#c98557", hair: "#171717", shirt: "#cc223a", accent: "#1f9b57", hairStyle: "slick", label: "7" },
-  haaland: { skin: "#e1b184", hair: "#f4d56f", shirt: "#77c7ff", accent: "#ffffff", hairStyle: "long", label: "9" },
-  vinicius: { skin: "#5b3325", hair: "#111111", shirt: "#ffe167", accent: "#1e9f54", hairStyle: "fade", label: "7" },
-  debruyne: { skin: "#e0a473", hair: "#c56a2d", shirt: "#d72828", accent: "#ffe45c", hairStyle: "crop", beard: true, label: "17" },
+  "Lionel Messi": { skin: "#d79a68", hair: "#3b2418", shirt: "#6bd8ff", accent: "#ffffff", hairStyle: "crop", beard: true, label: "10" },
+  "Kylian Mbappé": { skin: "#7b4a32", hair: "#171717", shirt: "#284dff", accent: "#ff3b3b", hairStyle: "fade", label: "10" },
+  "Lamine Yamal": { skin: "#a86a43", hair: "#171717", shirt: "#d62633", accent: "#243dff", hairStyle: "curls", label: "19" },
+  "Jude Bellingham": { skin: "#6f412c", hair: "#151515", shirt: "#ffffff", accent: "#d92626", hairStyle: "curls", label: "10" },
+  "Cristiano Ronaldo": { skin: "#c98557", hair: "#171717", shirt: "#cc223a", accent: "#1f9b57", hairStyle: "slick", label: "7" },
+  "Erling Haaland": { skin: "#e1b184", hair: "#f4d56f", shirt: "#77c7ff", accent: "#ffffff", hairStyle: "long", label: "9" },
+  "Vinícius Júnior": { skin: "#5b3325", hair: "#111111", shirt: "#ffe167", accent: "#1e9f54", hairStyle: "fade", label: "7" },
+  "Kevin De Bruyne": { skin: "#e0a473", hair: "#c56a2d", shirt: "#d72828", accent: "#ffe45c", hairStyle: "crop", beard: true, label: "17" },
 };
 
 function cartoonPortrait(player: Player): string {
-  const c = PORTRAITS[player.id] ?? {
+  const c = PORTRAITS[player.name] ?? {
     skin: "#c98557",
     hair: "#222222",
     shirt: "#27f58a",

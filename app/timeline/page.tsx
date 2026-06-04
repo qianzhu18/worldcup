@@ -17,9 +17,10 @@ export default async function TimelinePage() {
     }
   }
 
-  const groupMatches = MATCHES.filter((m) => m.stage === "Group");
-  const byDay = new Map<string, typeof groupMatches>();
-  for (const match of groupMatches) {
+  const scheduleMatches = [...MATCHES].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  const groupMatches = scheduleMatches.filter((m) => m.stage === "Group");
+  const byDay = new Map<string, typeof scheduleMatches>();
+  for (const match of scheduleMatches) {
     const day = match.kickoff.slice(0, 10);
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day)!.push(match);
@@ -28,7 +29,7 @@ export default async function TimelinePage() {
   const days = [...byDay.entries()];
   const final = MATCHES.find((m) => m.stage === "Final");
   const totalEdges = groupMatches.map((m) => {
-    const p = groupStageAnalysis(m.home, m.away, marketByCode).adjusted;
+    const p = groupStageAnalysis(m.home!, m.away!, marketByCode).adjusted;
     return Math.max(p.home, p.draw, p.away) - Math.min(p.home, p.draw, p.away);
   });
   const maxEdge = Math.max(...totalEdges);
@@ -55,7 +56,7 @@ export default async function TimelinePage() {
           </div>
           <div className="grid grid-cols-3 gap-2 sm:w-[420px]">
             <ConsoleStat label="比赛日" value={String(days.length)} />
-            <ConsoleStat label="小组赛" value={String(groupMatches.length)} />
+            <ConsoleStat label="总场次" value={String(scheduleMatches.length)} />
             <ConsoleStat label="最大分歧" value={`${(maxEdge * 100).toFixed(0)}%`} accent />
           </div>
         </div>
@@ -99,29 +100,32 @@ export default async function TimelinePage() {
 
               <div className="grid gap-3 md:grid-cols-2">
                 {matches.map((match) => {
-                  const home = teamByCode(match.home)!;
-                  const away = teamByCode(match.away)!;
-                  const analysis = groupStageAnalysis(match.home, match.away, marketByCode);
-                  const p = analysis.adjusted;
+                  const home = match.home ? teamByCode(match.home) : undefined;
+                  const away = match.away ? teamByCode(match.away) : undefined;
+                  const canAnalyze = Boolean(home && away);
+                  const analysis = canAnalyze ? groupStageAnalysis(match.home!, match.away!, marketByCode) : undefined;
+                  const p = analysis?.adjusted;
                   const favorite =
-                    p.home >= p.draw && p.home >= p.away
-                      ? home.zh
-                      : p.away >= p.home && p.away >= p.draw
-                        ? away.zh
-                        : "平局";
-                  const confidence = Math.max(p.home, p.draw, p.away);
+                    p && home && away
+                      ? p.home >= p.draw && p.home >= p.away
+                        ? home.zh
+                        : p.away >= p.home && p.away >= p.draw
+                          ? away.zh
+                          : "平局"
+                      : "待定";
+                  const confidence = p ? Math.max(p.home, p.draw, p.away) : 0;
 
                   return (
                     <Link
                       key={match.id}
-                      href={`/match/${match.id}`}
+                      href={`/match/${match.id}#ai-why`}
                       className="group relative overflow-hidden rounded-xl border border-white/10 bg-[#07121b]/82 p-4 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.08]"
                     >
                       <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-200">
-                            {match.group} 组
+                            {match.stage === "Group" ? `${match.group} 组` : stageLabel(match.stage)}
                           </span>
                           <span className="mono text-[11px] text-slate-500">{match.id.toUpperCase()}</span>
                         </div>
@@ -131,28 +135,38 @@ export default async function TimelinePage() {
                       </div>
 
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                        <TeamCell code={home.code} name={home.zh} align="left" />
+                        <TeamCell code={home?.code} name={home?.zh ?? match.homeLabel ?? "TBD"} align="left" />
                         <span className="mono text-sm font-bold text-white/35">VS</span>
-                        <TeamCell code={away.code} name={away.zh} align="right" />
+                        <TeamCell code={away?.code} name={away?.zh ?? match.awayLabel ?? "TBD"} align="right" />
                       </div>
 
                       <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-3">
                         <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
                           <span>AI 胜平负 · 公平赔率</span>
-                          <span>倾向 {favorite} · {(confidence * 100).toFixed(0)}%</span>
+                          <span>倾向 {favorite} · {(confidence * 100).toFixed(0)}% · 点击看依据</span>
                         </div>
-                        <TripletBar home={p.home} draw={p.draw} away={p.away} />
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          <OddsCell label={home.zh} value={analysis.fairOdds.home} />
-                          <OddsCell label="平局" value={analysis.fairOdds.draw} />
-                          <OddsCell label={away.zh} value={analysis.fairOdds.away} />
-                        </div>
+                        {analysis && p && home && away ? (
+                          <>
+                            <TripletBar home={p.home} draw={p.draw} away={p.away} />
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              <OddsCell label={home.zh} value={analysis.fairOdds.home} />
+                              <OddsCell label="平局" value={analysis.fairOdds.draw} />
+                              <OddsCell label={away.zh} value={analysis.fairOdds.away} />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="rounded-md border border-white/10 bg-[#07121b]/70 px-3 py-3 text-xs text-slate-500">
+                            淘汰赛对阵尚未产生，待参赛队确定后自动启用 AI 胜率和盘口分歧分析。
+                          </div>
+                        )}
                       </div>
 
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <MarketProxy label={home.zh} value={analysis.market.home.marketChampion} edge={analysis.market.home.edge} />
-                        <MarketProxy label={away.zh} value={analysis.market.away.marketChampion} edge={analysis.market.away.edge} />
-                      </div>
+                      {analysis && home && away && (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <MarketProxy label={home.zh} value={analysis.market.home.marketChampion} edge={analysis.market.home.edge} />
+                          <MarketProxy label={away.zh} value={analysis.market.away.marketChampion} edge={analysis.market.away.edge} />
+                        </div>
+                      )}
 
                       <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
                         <span className="truncate">{match.venue}</span>
@@ -209,14 +223,18 @@ function MarketProxy({ label, value, edge }: { label: string; value?: number; ed
   );
 }
 
-function TeamCell({ code, name, align }: { code: string; name: string; align: "left" | "right" }) {
+function TeamCell({ code, name, align }: { code?: string; name: string; align: "left" | "right" }) {
   return (
     <div className={`flex min-w-0 items-center gap-2 ${align === "right" ? "justify-end text-right" : ""}`}>
-      {align === "left" && <Flag code={code} className="h-6 w-9" />}
+      {align === "left" && (code ? <Flag code={code} className="h-6 w-9" /> : <PlaceholderFlag />)}
       <span className="truncate text-sm font-semibold text-white">{name}</span>
-      {align === "right" && <Flag code={code} className="h-6 w-9" />}
+      {align === "right" && (code ? <Flag code={code} className="h-6 w-9" /> : <PlaceholderFlag />)}
     </div>
   );
+}
+
+function PlaceholderFlag() {
+  return <span className="h-6 w-9 rounded-[3px] border border-white/10 bg-white/[0.06]" />;
 }
 
 function TripletBar({ home, draw, away }: { home: number; draw: number; away: number }) {
@@ -248,4 +266,16 @@ function ConsoleStat({ label, value, accent }: { label: string; value: string; a
 function fmtDate(d: string): string {
   const date = new Date(d + "T00:00:00");
   return date.toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" });
+}
+
+function stageLabel(stage: string): string {
+  const labels: Record<string, string> = {
+    "Round of 32": "32 强",
+    "Round of 16": "16 强",
+    Quarterfinal: "1/4 决赛",
+    Semifinal: "半决赛",
+    "Third place": "三四名",
+    Final: "决赛",
+  };
+  return labels[stage] ?? stage;
 }
