@@ -89,6 +89,43 @@ vercel inspect worldcup-polymarket-win.vercel.app
 vercel inspect worldcup-polymarket-win.vercel.app --logs
 ```
 
+## Supabase MCP
+
+Supabase development MCP is configured for project `hgxmpnwvphpivlsemywo`.
+
+- Codex global MCP: `supabase`
+- Claude Code user MCP: `supabase`
+- MCP URL: `https://mcp.supabase.com/mcp?project_ref=hgxmpnwvphpivlsemywo`
+- Mode: development database, write access allowed, no feature subset configured.
+- Agent Skills installed in this repo:
+  - `.agents/skills/supabase`
+  - `.agents/skills/supabase-postgres-best-practices`
+
+Codex setup commands:
+
+```bash
+codex mcp add supabase --url "https://mcp.supabase.com/mcp?project_ref=hgxmpnwvphpivlsemywo"
+codex mcp login supabase
+codex mcp get supabase
+```
+
+Claude Code setup commands:
+
+```bash
+claude mcp add --scope user --transport http supabase "https://mcp.supabase.com/mcp?project_ref=hgxmpnwvphpivlsemywo"
+claude mcp get supabase
+```
+
+Claude Code does not expose `claude mcp login`; authenticate from inside Claude Code with `/mcp`, choose `supabase`, and complete the browser OAuth flow.
+
+Skill install command:
+
+```bash
+npx skills add supabase/agent-skills
+```
+
+After adding MCP servers or skills, restart/new-open the relevant agent session so tools and skills are loaded.
+
 ## Required Environment Variables
 
 Production currently depends on these Vercel environment variables:
@@ -125,5 +162,6 @@ Keep `.env.local` local only. Do not commit secrets.
 
 ## Documentation Version
 
+- 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.
 - 2026-06-09.1: Added project workflow, Vercel deployment SOP, environment inventory, and launch-readiness assessment.
