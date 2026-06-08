@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AuthButton } from "./AuthButton";
 
 const links = [
   { href: "/", label: "市场扫描" },
+  { href: "/signals", label: "博弈信号" },
   { href: "/timeline", label: "赛程时间线" },
   { href: "/teams", label: "球队" },
   { href: "/players", label: "球员" },
@@ -43,6 +45,7 @@ export function Nav() {
             );
           })}
         </nav>
+        <AuthButton />
       </div>
     </header>
   );

@@ -1,7 +1,6 @@
 # JMWL World Cup · AI 世界杯预测市场分析站
 
-> 🌐 **线上地址：** https://pitchodds.niuniu5658.workers.dev  
-> 💬 **Telegram 社群：** https://t.me/+fcXADOedJYE2OTNl
+> 🌐 **线上地址：** https://worldcup-polymarket-win.vercel.app
 
 ---
 
@@ -28,7 +27,7 @@
 | **球队中心** | 48 支球队分组总览，详情含主教练战绩、近一年比赛、Elo 调整因子 |
 | **球员中心** | Watchlist 排行 + 六维雷达图 + 打法标签 + 赛事数据（进球/助攻/xG） |
 | **LIVE 跑马灯** | 顶栏实时滚动 Polymarket 夺冠概率（含国旗，鼠标悬停暂停） |
-| **TG 社群入口** | 每日 AI 扫盘信号同步，页脚直接加入 |
+| **微信联系方式** | 页脚展示微信二维码，扫码添加 |
 
 ---
 
@@ -144,8 +143,8 @@ npx wrangler deploy
 echo "your_key" | npx wrangler secret put MINIMAX_API_KEY
 ```
 
-**已部署：** https://pitchodds.niuniu5658.workers.dev  
-**版本：** Next.js 15 + OpenNext 1.19 + Cloudflare Workers · 359 页静态预渲染
+**已部署：** https://worldcup-polymarket-win.vercel.app
+**版本：** Next.js 15 + Vercel · AI 信号融合
 
 ---
 

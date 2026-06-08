@@ -12,7 +12,8 @@
     "enabled": true
   },
   "vars": {
-    "MINIMAX_BASE_URL": "https://api.minimax.chat",
-    "MINIMAX_MODEL": "MiniMax-Text-01"
+    "AI_BASE_URL": "https://tokendance.space/gateway/v1",
+    "AI_MODEL": "minimax-m3:free",
+    "AI_FALLBACK_MODELS": "deepseek-v4-pro,qwen3.7-max"
   }
 }

@@ -1,33 +1,45 @@
-// MiniMax (China node) client for AI odds analysis.
+// TokenDance (词元跳动) OpenAI-compatible gateway client for AI odds analysis.
 // Principle: the AI prices events BLIND to any market/Polymarket price, so the
 // AI-vs-market comparison stays meaningful. Server-side only; results cached.
+// Supports model fallback: primary -> fallback1 -> fallback2.
 import { TEAMS, teamByCode } from "./worldcup";
+import { proxyFetch } from "./proxy-fetch";
 
 type Msg = { role: "system" | "user" | "assistant"; content: string };
 
 // Read env at call time (Cloudflare Workers only populate env per-request).
 function cfg() {
   return {
-    BASE: process.env.MINIMAX_BASE_URL || "https://api.minimax.chat",
-    MODEL: process.env.MINIMAX_MODEL || "MiniMax-Text-01",
-    KEY: process.env.MINIMAX_API_KEY,
+    BASE: process.env.AI_BASE_URL || "https://tokendance.space/gateway/v1",
+    MODEL: process.env.AI_MODEL || "minimax-m3:free",
+    FALLBACKS: (process.env.AI_FALLBACK_MODELS || "deepseek-v4-pro,qwen3.7-max")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    KEY: process.env.AI_API_KEY,
   };
 }
 
-async function chat(messages: Msg[], maxTokens = 1400): Promise<string> {
-  const { BASE, MODEL, KEY } = cfg();
-  if (!KEY) throw new Error("MINIMAX_API_KEY missing");
+async function callModel(
+  base: string,
+  model: string,
+  key: string,
+  messages: Msg[],
+  maxTokens: number,
+): Promise<string> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
+  const timer = setTimeout(() => ctrl.abort(), 45000); // 45 second timeout (model can be slow through proxy)
   try {
-    const r = await fetch(`${BASE}/v1/text/chatcompletion_v2`, {
+    const r = await proxyFetch(`${base}/chat/completions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: MODEL, messages, max_tokens: maxTokens, temperature: 0.3 }),
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.3 }),
       signal: ctrl.signal,
-      cache: "no-store",
     });
-    if (!r.ok) throw new Error(`MiniMax HTTP ${r.status}`);
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      throw new Error(`${model} HTTP ${r.status}: ${body.slice(0, 200)}`);
+    }
     const j = await r.json();
     return j?.choices?.[0]?.message?.content ?? "";
   } finally {
@@ -35,11 +47,29 @@ async function chat(messages: Msg[], maxTokens = 1400): Promise<string> {
   }
 }
 
+// Try primary model, then fallbacks in order.
+async function chat(messages: Msg[], maxTokens = 1400): Promise<string> {
+  const { BASE, MODEL, FALLBACKS, KEY } = cfg();
+  if (!KEY) throw new Error("AI_API_KEY missing");
+
+  const models = [MODEL, ...FALLBACKS];
+  let lastErr: Error | null = null;
+
+  for (const model of models) {
+    try {
+      return await callModel(BASE, model, KEY, messages, maxTokens);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      console.warn(`[ai] ${model} failed: ${lastErr.message}, trying next...`);
+    }
+  }
+  throw lastErr || new Error("all AI models failed");
+}
+
 function extractJSON<T>(s: string): T {
   const cleaned = s.replace(/```json/gi, "").replace(/```/g, "");
   const start = cleaned.search(/[[{]/);
   if (start < 0) throw new Error("no json in response");
-  // find matching end by scanning for last } or ]
   const end = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
   return JSON.parse(cleaned.slice(start, end + 1)) as T;
 }
@@ -133,7 +163,7 @@ export async function aiMatchAnalysis(homeCode: string, awayCode: string): Promi
   });
 }
 
-// Safe wrappers — never break the page if MiniMax is unavailable.
+// Safe wrappers — never break the page if AI is unavailable.
 export async function safeChampion(): Promise<AiChampion[]> {
   try {
     return await aiChampionAnalysis();

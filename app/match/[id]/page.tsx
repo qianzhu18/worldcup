@@ -1,9 +1,6 @@
 import { MATCHES, TEAMS, matchById, teamByCode, headToHead, flag } from "@/lib/worldcup";
 
-export const revalidate = 300; // 5 min — matches have live odds
-export function generateStaticParams() {
-  return MATCHES.map((m) => ({ id: m.id }));
-}
+export const dynamic = "force-dynamic";
 import { groupStageAnalysis, matchProbabilities, scoreMatrix } from "@/lib/model";
 import { playersByTeam, playerPhoto } from "@/lib/players";
 import { ProbBar, Flag, SectionTitle, Stat } from "@/components/ui";
@@ -163,7 +160,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <div className="mb-3 flex items-center justify-between">
               <h3 className="heading text-2xl text-white">
                 🤖 AI 战术分析
-                <span className="ml-2 text-xs font-normal text-electric">powered by MiniMax</span>
+                <span className="ml-2 text-xs font-normal text-electric">powered by TokenDance</span>
               </h3>
               <span className="chip bg-electric/20 text-electric">
                 把握度 {(ai.confidence * 100).toFixed(0)}%

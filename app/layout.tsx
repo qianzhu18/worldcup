@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { Ticker } from "@/components/Ticker";
+import { Providers } from "@/components/Providers";
 import { getWorldCupMarkets } from "@/lib/polymarket";
 import { championProbabilities } from "@/lib/model";
 import { TEAMS } from "@/lib/worldcup";
@@ -15,7 +16,6 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Live odds ticker fed by real Polymarket data (fail-soft to model odds).
   let items: { label: string; value: string; up?: boolean }[] = [];
   try {
     const markets = await getWorldCupMarkets();
@@ -45,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body style={{ ["--font-sans" as string]: "'Inter', system-ui, sans-serif" }}>
+        <Providers>
         <div className="content-layer">
           <Nav />
           <Ticker items={tickerItems} />
@@ -55,36 +56,32 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(39,245,138,0.16),transparent_38%),radial-gradient(circle_at_88%_45%,rgba(34,211,238,0.12),transparent_34%)]" />
                 <div className="relative">
                   <div className="text-[10px] font-black uppercase tracking-[0.32em] text-emerald-300">
-                    Telegram community
+                    Contact
                   </div>
                   <div className="mt-2 text-2xl font-black text-white md:text-3xl">
-                    加入 TG 社群，一起盯世界杯预测市场
+                    {"联系我，聊世界杯预测市场"}
                   </div>
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                    每天同步 AI 扫描信号、YES / NO 判断逻辑和盘口变化，视频版尾直接扫码或点击进群。
+                    {"有想法、有问题、想合作？扫码加微信随时聊。"}
                   </p>
                 </div>
 
-                <div className="relative mt-5 flex flex-col gap-2 md:mt-0 md:items-end">
-                  <a
-                    href="https://t.me/+fcXADOedJYE2OTNl"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-xl border border-emerald-300/35 bg-emerald-300 px-5 py-3 text-sm font-black text-ink-950 shadow-[0_0_34px_rgba(39,245,138,0.28)] transition hover:brightness-110"
-                  >
-                    加入 Telegram 社群
-                  </a>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-400">
-                    t.me/+fcXADOedJYE2OTNl
-                  </div>
+                <div className="relative mt-5 flex flex-col items-center gap-3 md:mt-0 md:items-end">
+                  <img
+                    src="/wechat-qrcode.jpg"
+                    alt="微信联系"
+                    className="h-32 w-32 rounded-xl border border-emerald-400/30 object-cover shadow-lg"
+                  />
+                  <span className="text-xs font-semibold text-emerald-300">{"扫码添加微信"}</span>
                 </div>
               </div>
               <div className="border-t border-white/10 px-6 py-3 text-center text-[11px] text-slate-500 md:px-8">
-                盘口数据来自 Polymarket 公开 API（实时）· AI 分析由 MiniMax 生成。仅供信息参考，非投资建议。
+                {"盘口数据来自 Polymarket 公开 API（实时）· AI 分析由 TokenDance 多模型路由生成。仅供信息参考，非投资建议。"}
               </div>
             </div>
           </footer>
         </div>
+        </Providers>
       </body>
     </html>
   );

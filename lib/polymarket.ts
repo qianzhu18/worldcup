@@ -1,5 +1,7 @@
 // Server-side Polymarket (Gamma API) client. Public, no key required.
 import { TEAMS } from "./worldcup";
+import { getAllMockMarkets } from "./mock-market";
+import { proxyFetch } from "./proxy-fetch";
 
 const GAMMA = "https://gamma-api.polymarket.com";
 
@@ -39,12 +41,20 @@ const WC_EVENT_SLUGS = [
 ];
 
 async function getJSON(url: string) {
-  const res = await fetch(url, {
-    headers: { accept: "application/json" },
-    next: { revalidate: 120 }, // cache 2 min
-  });
-  if (!res.ok) throw new Error(`Polymarket ${res.status}`);
-  return res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  try {
+    const res = await proxyFetch(url, {
+      headers: { accept: "application/json" },
+      signal: controller.signal,
+      next: { revalidate: 120 }, // cache 2 min
+    });
+    if (!res.ok) throw new Error(`Polymarket ${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function parseArr(s: unknown): string[] {
@@ -104,34 +114,48 @@ function eventToMarket(ev: any): Market {
 export async function getWorldCupMarkets(): Promise<Market[]> {
   const out: Market[] = [];
   const seen = new Set<string>();
-  for (const slug of WC_EVENT_SLUGS) {
-    try {
-      const data = await getJSON(`${GAMMA}/events?slug=${slug}`);
-      const events = Array.isArray(data) ? data : [data];
-      for (const ev of events) {
-        if (!ev || seen.has(String(ev.id))) continue;
-        seen.add(String(ev.id));
-        out.push(eventToMarket(ev));
+
+  try {
+    for (const slug of WC_EVENT_SLUGS) {
+      try {
+        const data = await getJSON(`${GAMMA}/events?slug=${slug}`);
+        const events = Array.isArray(data) ? data : [data];
+        for (const ev of events) {
+          if (!ev || seen.has(String(ev.id))) continue;
+          seen.add(String(ev.id));
+          out.push(eventToMarket(ev));
+        }
+      } catch {
+        /* skip unavailable slug */
       }
-    } catch {
-      /* skip unavailable slug */
     }
+    // Fallback discovery if curated slugs missed: search soccer tag.
+    if (out.length === 0) {
+      try {
+        const data = await getJSON(
+          `${GAMMA}/events?closed=false&limit=20&order=volume&ascending=false&tag=soccer`
+        );
+        for (const ev of data) {
+          if (seen.has(String(ev.id))) continue;
+          seen.add(String(ev.id));
+          out.push(eventToMarket(ev));
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    // If Polymarket API is unreachable, use mock data
+    console.log("[polymarket] API unreachable, using mock data");
+    return getAllMockMarkets();
   }
-  // Fallback discovery if curated slugs missed: search soccer tag.
+
+  // If no markets found from API, use mock data
   if (out.length === 0) {
-    try {
-      const data = await getJSON(
-        `${GAMMA}/events?closed=false&limit=20&order=volume&ascending=false&tag=soccer`
-      );
-      for (const ev of data) {
-        if (seen.has(String(ev.id))) continue;
-        seen.add(String(ev.id));
-        out.push(eventToMarket(ev));
-      }
-    } catch {
-      /* ignore */
-    }
+    console.log("[polymarket] No markets from API, using mock data");
+    return getAllMockMarkets();
   }
+
   return out.sort((a, b) => b.heat - a.heat);
 }
 

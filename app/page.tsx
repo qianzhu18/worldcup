@@ -29,7 +29,7 @@ export default async function Home() {
   const openingHome = openingMatch.home ? codeToTeam.get(openingMatch.home)?.zh : openingMatch.homeLabel;
   const openingAway = openingMatch.away ? codeToTeam.get(openingMatch.away)?.zh : openingMatch.awayLabel;
 
-  // AI (MiniMax) independent champion pricing vs Polymarket implied prob.
+  // AI (TokenDance) independent champion pricing vs Polymarket implied prob.
   const aiChamp = await safeChampion();
   const marketByCode = new Map<string, number>();
   if (winner)
@@ -127,9 +127,9 @@ export default async function Home() {
       {/* ---------- AI PRICING vs MARKET ---------- */}
       {aiRows.length > 0 ? (
         <section id="ai">
-          <SectionTitle sub="MiniMax 独立给出夺冠概率（对市场盲测），再与 Polymarket 实时隐含概率对照，找出 AI 眼中的错价">
+          <SectionTitle sub="AI 独立给出夺冠概率（对市场盲测），再与 Polymarket 实时隐含概率对照，找出 AI 眼中的错价">
             <span className="zen-text">AI 定价</span> vs 市场
-            <span className="ml-2 align-middle text-xs font-normal text-electric">powered by MiniMax</span>
+            <span className="ml-2 align-middle text-xs font-normal text-electric">powered by TokenDance</span>
           </SectionTitle>
           <div className="grid gap-3 md:grid-cols-2">
             {aiRows.map((a) => {
@@ -173,7 +173,7 @@ export default async function Home() {
             })}
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            * AI 概率为 MiniMax 独立估计，未参考市场赔率；仅供参考，非投资建议。
+            * AI 概率为 TokenDance 多模型独立估计，未参考市场赔率；仅供参考，非投资建议。
           </p>
         </section>
       ) : (
