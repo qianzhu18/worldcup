@@ -1,111 +1,129 @@
-// SQLite database with lazy init — gracefully degrades on serverless (Vercel).
-import path from "path";
+import { createSupabaseServerClient } from "./supabase/server";
 
-let _db: any = null;
-let _dbFailed = false;
+export type AppProfile = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
-function getDb() {
-  if (_dbFailed) return null;
-  if (_db) return _db;
-  try {
-    const Database = require("better-sqlite3");
-    const fs = require("fs");
-    const DB_PATH = path.join(process.cwd(), "data", "worldcup.db");
-    const dir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    _db = new Database(DB_PATH);
-    _db.pragma("journal_mode = WAL");
-    initTables(_db);
-    return _db;
-  } catch (e) {
-    console.warn("[db] SQLite unavailable:", (e as Error).message);
-    _dbFailed = true;
-    return null;
-  }
+export type UserPrediction = {
+  id: string;
+  user_id: string;
+  game_type: string;
+  target_type: string;
+  target_id: string;
+  selection: string;
+  confidence: number | null;
+  status: string;
+  actual_result: string | null;
+  points: number;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown>;
+};
+
+export async function getUserByEmail(email: string): Promise<AppProfile | undefined> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  return data as AppProfile | undefined;
 }
 
-function initTables(db: any) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      name TEXT,
-      avatar TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS user_predictions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      match_id TEXT NOT NULL,
-      prediction TEXT NOT NULL,
-      confidence REAL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      UNIQUE(user_id, match_id)
-    );
-    CREATE TABLE IF NOT EXISTS user_favorites (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      item_type TEXT NOT NULL,
-      item_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      UNIQUE(user_id, item_type, item_id)
-    );
-  `);
+export async function getUserById(id: string): Promise<AppProfile | undefined> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  return data as AppProfile | undefined;
 }
 
-export default { get getDb() { return getDb(); } };
-
-export function createUser(email: string, passwordHash: string, name?: string) {
-  const db = getDb();
-  if (!db) throw new Error("Database unavailable");
-  return db.prepare("INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)").run(email, passwordHash, name || email.split("@")[0]);
+export async function upsertProfile(profile: {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  avatar_url?: string | null;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(profile, { onConflict: "id" })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as AppProfile;
 }
 
-export function getUserByEmail(email: string) {
-  const db = getDb();
-  if (!db) return undefined;
-  return db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
+export async function savePrediction(
+  userId: string,
+  matchId: string,
+  prediction: string,
+  confidence?: number,
+) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("user_predictions")
+    .upsert(
+      {
+        user_id: userId,
+        game_type: "match_1x2",
+        target_type: "match",
+        target_id: matchId,
+        selection: prediction,
+        confidence: confidence ?? null,
+      },
+      { onConflict: "user_id,game_type,target_id" },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as UserPrediction;
 }
 
-export function getUserById(id: number) {
-  const db = getDb();
-  if (!db) return undefined;
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(id) as any;
+export async function getUserPredictions(userId: string): Promise<UserPrediction[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("user_predictions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []) as UserPrediction[];
 }
 
-export function savePrediction(userId: number, matchId: string, prediction: string, confidence?: number) {
-  const db = getDb();
-  if (!db) throw new Error("Database unavailable");
-  return db.prepare("INSERT OR REPLACE INTO user_predictions (user_id, match_id, prediction, confidence) VALUES (?, ?, ?, ?)").run(userId, matchId, prediction, confidence);
+export async function addFavorite(userId: string, itemType: string, itemId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("user_favorites")
+    .upsert(
+      { user_id: userId, item_type: itemType, item_id: itemId },
+      { onConflict: "user_id,item_type,item_id" },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
-export function getUserPredictions(userId: number) {
-  const db = getDb();
-  if (!db) return [];
-  return db.prepare("SELECT * FROM user_predictions WHERE user_id = ? ORDER BY created_at DESC").all(userId);
+export async function removeFavorite(userId: string, itemType: string, itemId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("user_favorites")
+    .delete()
+    .eq("user_id", userId)
+    .eq("item_type", itemType)
+    .eq("item_id", itemId);
+  if (error) throw error;
 }
 
-export function addFavorite(userId: number, itemType: string, itemId: string) {
-  const db = getDb();
-  if (!db) throw new Error("Database unavailable");
-  return db.prepare("INSERT OR IGNORE INTO user_favorites (user_id, item_type, item_id) VALUES (?, ?, ?)").run(userId, itemType, itemId);
-}
-
-export function removeFavorite(userId: number, itemType: string, itemId: string) {
-  const db = getDb();
-  if (!db) throw new Error("Database unavailable");
-  return db.prepare("DELETE FROM user_favorites WHERE user_id = ? AND item_type = ? AND item_id = ?").run(userId, itemType, itemId);
-}
-
-export function getUserFavorites(userId: number, itemType?: string) {
-  const db = getDb();
-  if (!db) return [];
-  if (itemType) {
-    return db.prepare("SELECT * FROM user_favorites WHERE user_id = ? AND item_type = ?").all(userId, itemType);
-  }
-  return db.prepare("SELECT * FROM user_favorites WHERE user_id = ?").all(userId);
+export async function getUserFavorites(userId: string, itemType?: string) {
+  const supabase = await createSupabaseServerClient();
+  let query = supabase.from("user_favorites").select("*").eq("user_id", userId);
+  if (itemType) query = query.eq("item_type", itemType);
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error) return [];
+  return data ?? [];
 }

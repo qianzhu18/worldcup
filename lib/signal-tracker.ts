@@ -1,71 +1,6 @@
-// Signal tracking and backtesting system.
-// Records all signals and their outcomes for accuracy analysis.
-// Gracefully degrades when SQLite is unavailable (Vercel serverless).
+import { createSupabaseServerClient } from "./supabase/server";
 
-let _db: any = null;
-let _dbFailed = false;
-
-function getDb() {
-  if (_dbFailed) return null;
-  if (_db) return _db;
-  try {
-    // Dynamic require so the module doesn't crash at import time on serverless
-    const Database = require("better-sqlite3");
-    const path = require("path");
-    const fs = require("fs");
-    const dataDir = path.join(process.cwd(), "data");
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-    _db = new Database(path.join(dataDir, "signals.db"));
-    _db.pragma("journal_mode = WAL");
-    initTables(_db);
-    return _db;
-  } catch (e) {
-    console.warn("[signal-tracker] SQLite unavailable, signal tracking disabled:", (e as Error).message);
-    _dbFailed = true;
-    return null;
-  }
-}
-
-function initTables(db: any) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS signals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      signal_type TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      market_prob REAL NOT NULL,
-      model_prob REAL NOT NULL,
-      ai_prob REAL,
-      fused_prob REAL NOT NULL,
-      edge REAL NOT NULL,
-      action TEXT NOT NULL,
-      kelly_fraction REAL,
-      confidence REAL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS signal_outcomes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      signal_id INTEGER NOT NULL,
-      outcome TEXT NOT NULL,
-      actual_result TEXT,
-      pnl REAL,
-      resolved_at DATETIME,
-      FOREIGN KEY (signal_id) REFERENCES signals(id)
-    );
-    CREATE TABLE IF NOT EXISTS market_snapshots (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event_slug TEXT NOT NULL,
-      outcome_label TEXT NOT NULL,
-      price REAL NOT NULL,
-      volume REAL,
-      liquidity REAL,
-      captured_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-}
-
-// ─── Signal Recording ─────────────────────────────────────────────────────────
-
-export function recordSignal(params: {
+export async function recordSignal(params: {
   signalType: "champion" | "match";
   targetId: string;
   marketProb: number;
@@ -76,51 +11,90 @@ export function recordSignal(params: {
   action: string;
   kellyFraction?: number;
   confidence?: number;
-}): number {
-  const db = getDb();
-  if (!db) return 0;
+}): Promise<string | null> {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO signals (signal_type, target_id, market_prob, model_prob, ai_prob, fused_prob, edge, action, kelly_fraction, confidence)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(
-      params.signalType, params.targetId, params.marketProb, params.modelProb,
-      params.aiProb ?? null, params.fusedProb, params.edge, params.action,
-      params.kellyFraction ?? null, params.confidence ?? null,
-    );
-    return Number(result.lastInsertRowid);
-  } catch { return 0; }
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("signals")
+      .insert({
+        signal_type: params.signalType,
+        target_id: params.targetId,
+        market_prob: params.marketProb,
+        model_prob: params.modelProb,
+        ai_prob: params.aiProb ?? null,
+        fused_prob: params.fusedProb,
+        edge: params.edge,
+        action: params.action,
+        kelly_fraction: params.kellyFraction ?? null,
+        confidence: params.confidence ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) return null;
+    return data.id as string;
+  } catch {
+    return null;
+  }
 }
 
-export function recordOutcome(signalId: number, outcome: "win" | "loss" | "push", actualResult: string, pnl: number) {
-  const db = getDb();
-  if (!db) return;
+export async function recordOutcome(
+  signalId: string,
+  outcome: "win" | "loss" | "push",
+  actualResult: string,
+  pnl: number,
+) {
   try {
-    db.prepare(`INSERT INTO signal_outcomes (signal_id, outcome, actual_result, pnl, resolved_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`)
-      .run(signalId, outcome, actualResult, pnl);
+    const supabase = await createSupabaseServerClient();
+    await supabase.from("signal_outcomes").insert({
+      signal_id: signalId,
+      outcome,
+      actual_result: actualResult,
+      pnl,
+      resolved_at: new Date().toISOString(),
+    });
   } catch {}
 }
 
-export function captureMarketSnapshot(eventSlug: string, outcomeLabel: string, price: number, volume?: number, liquidity?: number) {
-  const db = getDb();
-  if (!db) return;
+export async function captureMarketSnapshot(
+  eventSlug: string,
+  outcomeLabel: string,
+  price: number,
+  volume?: number,
+  liquidity?: number,
+) {
   try {
-    db.prepare(`INSERT INTO market_snapshots (event_slug, outcome_label, price, volume, liquidity) VALUES (?, ?, ?, ?, ?)`)
-      .run(eventSlug, outcomeLabel, price, volume ?? null, liquidity ?? null);
+    const supabase = await createSupabaseServerClient();
+    await supabase.from("market_snapshots").insert({
+      event_slug: eventSlug,
+      outcome_label: outcomeLabel,
+      price,
+      volume: volume ?? null,
+      liquidity: liquidity ?? null,
+    });
   } catch {}
 }
 
-export function getPriceHistory(eventSlug: string, outcomeLabel: string, hours: number = 24) {
-  const db = getDb();
-  if (!db) return [];
+export async function getPriceHistory(
+  eventSlug: string,
+  outcomeLabel: string,
+  hours: number = 24,
+) {
   try {
-    return db.prepare(`SELECT price, captured_at FROM market_snapshots WHERE event_slug = ? AND outcome_label = ? AND captured_at > datetime('now', ?) ORDER BY captured_at ASC`)
-      .all(eventSlug, outcomeLabel, `-${hours} hours`);
-  } catch { return []; }
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("market_snapshots")
+      .select("price,captured_at")
+      .eq("event_slug", eventSlug)
+      .eq("outcome_label", outcomeLabel)
+      .gte("captured_at", since)
+      .order("captured_at", { ascending: true });
+    if (error) return [];
+    return data ?? [];
+  } catch {
+    return [];
+  }
 }
-
-// ─── Performance Analytics ────────────────────────────────────────────────────
 
 export type SignalPerformance = {
   totalSignals: number;
@@ -140,42 +114,81 @@ export type SignalPerformance = {
 };
 
 const EMPTY_PERF: SignalPerformance = {
-  totalSignals: 0, resolvedSignals: 0, wins: 0, losses: 0, pushes: 0,
-  winRate: 0, avgEdge: 0, avgConfidence: 0, totalPnL: 0, roi: 0,
-  sharpeRatio: 0, maxDrawdown: 0, byAction: {}, byConfidence: {},
+  totalSignals: 0,
+  resolvedSignals: 0,
+  wins: 0,
+  losses: 0,
+  pushes: 0,
+  winRate: 0,
+  avgEdge: 0,
+  avgConfidence: 0,
+  totalPnL: 0,
+  roi: 0,
+  sharpeRatio: 0,
+  maxDrawdown: 0,
+  byAction: {},
+  byConfidence: {},
 };
 
-export function getSignalPerformance(signalType?: "champion" | "match", days: number = 30): SignalPerformance {
-  const db = getDb();
-  if (!db) return EMPTY_PERF;
+export async function getSignalPerformance(
+  signalType?: "champion" | "match",
+  days: number = 30,
+): Promise<SignalPerformance> {
   try {
-    const typeFilter = signalType ? `AND s.signal_type = '${signalType}'` : "";
-    const overall = db.prepare(`
-      SELECT COUNT(*) as total, COUNT(CASE WHEN o.outcome != 'pending' THEN 1 END) as resolved,
-        COUNT(CASE WHEN o.outcome = 'win' THEN 1 END) as wins, COUNT(CASE WHEN o.outcome = 'loss' THEN 1 END) as losses,
-        COUNT(CASE WHEN o.outcome = 'push' THEN 1 END) as pushes, AVG(s.edge) as avg_edge,
-        AVG(s.confidence) as avg_confidence, COALESCE(SUM(o.pnl), 0) as total_pnl
-      FROM signals s LEFT JOIN signal_outcomes o ON o.signal_id = s.id
-      WHERE s.created_at > datetime('now', ?) ${typeFilter}
-    `).get(`-${days} days`) as any;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const supabase = await createSupabaseServerClient();
+    let query = supabase
+      .from("signals")
+      .select("edge,confidence,action,signal_outcomes(outcome,pnl)")
+      .gte("created_at", since);
+    if (signalType) query = query.eq("signal_type", signalType);
 
-    const resolved = overall.resolved || 1;
+    const { data, error } = await query;
+    if (error || !data) return EMPTY_PERF;
+
+    let wins = 0;
+    let losses = 0;
+    let pushes = 0;
+    let totalPnL = 0;
+    let resolved = 0;
+    let edgeSum = 0;
+    let confidenceSum = 0;
+
+    for (const row of data as any[]) {
+      edgeSum += Number(row.edge ?? 0);
+      confidenceSum += Number(row.confidence ?? 0);
+      const outcome = row.signal_outcomes?.[0];
+      if (!outcome) continue;
+      if (outcome.outcome === "win") wins += 1;
+      if (outcome.outcome === "loss") losses += 1;
+      if (outcome.outcome === "push") pushes += 1;
+      if (["win", "loss", "push"].includes(outcome.outcome)) resolved += 1;
+      totalPnL += Number(outcome.pnl ?? 0);
+    }
+
+    const total = data.length;
+    const denominator = resolved || 1;
     return {
-      totalSignals: overall.total || 0, resolvedSignals: resolved,
-      wins: overall.wins || 0, losses: overall.losses || 0, pushes: overall.pushes || 0,
-      winRate: overall.wins / resolved, avgEdge: overall.avg_edge || 0,
-      avgConfidence: overall.avg_confidence || 0, totalPnL: overall.total_pnl || 0,
-      roi: overall.total_pnl / resolved, sharpeRatio: 0, maxDrawdown: 0,
-      byAction: {}, byConfidence: {},
+      ...EMPTY_PERF,
+      totalSignals: total,
+      resolvedSignals: resolved,
+      wins,
+      losses,
+      pushes,
+      winRate: wins / denominator,
+      avgEdge: total ? edgeSum / total : 0,
+      avgConfidence: total ? confidenceSum / total : 0,
+      totalPnL,
+      roi: totalPnL / denominator,
     };
-  } catch { return EMPTY_PERF; }
+  } catch {
+    return EMPTY_PERF;
+  }
 }
-
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
 
 export type LeaderboardEntry = {
   rank: number;
-  userId: number;
+  userId: string;
   username: string;
   totalPredictions: number;
   correctPredictions: number;
@@ -184,8 +197,52 @@ export type LeaderboardEntry = {
   streak: number;
 };
 
-export function getLeaderboard(limit: number = 20): LeaderboardEntry[] {
-  return [];
+export async function getLeaderboard(limit: number = 20): Promise<LeaderboardEntry[]> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("user_predictions")
+      .select("user_id,points,status,profiles:user_id(name,email)")
+      .eq("status", "settled")
+      .order("points", { ascending: false })
+      .limit(limit * 20);
+    if (error || !data) return [];
+
+    const byUser = new Map<string, LeaderboardEntry>();
+    for (const row of data as any[]) {
+      const userId = row.user_id as string;
+      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+      const entry =
+        byUser.get(userId) ??
+        {
+          rank: 0,
+          userId,
+          username: profile?.name || profile?.email || "Player",
+          totalPredictions: 0,
+          correctPredictions: 0,
+          accuracy: 0,
+          totalEdge: 0,
+          streak: 0,
+        };
+      entry.totalPredictions += 1;
+      entry.totalEdge += Number(row.points ?? 0);
+      if (Number(row.points ?? 0) > 0) entry.correctPredictions += 1;
+      byUser.set(userId, entry);
+    }
+
+    return [...byUser.values()]
+      .map((entry) => ({
+        ...entry,
+        accuracy: entry.totalPredictions
+          ? entry.correctPredictions / entry.totalPredictions
+          : 0,
+      }))
+      .sort((a, b) => b.totalEdge - a.totalEdge)
+      .slice(0, limit)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  } catch {
+    return [];
+  }
 }
 
 export function scoreSignal(signal: {

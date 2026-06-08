@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
     // Record signals and snapshots for tracking
     for (const signal of signals) {
-      recordSignal({
+      await recordSignal({
         signalType: "champion",
         targetId: signal.teamCode,
         marketProb: signal.marketProb,
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
         confidence: signal.confidence,
       });
 
-      captureMarketSnapshot(
+      await captureMarketSnapshot(
         winner.slug,
         signal.team,
         signal.marketProb,
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     // Performance stats (optional)
     let performance = null;
     if (includePerformance) {
-      performance = getSignalPerformance("champion", 30);
+      performance = await getSignalPerformance("champion", 30);
     }
 
     return NextResponse.json({

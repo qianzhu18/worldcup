@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,24 +17,19 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+    const supabase = createSupabaseBrowserClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-      if (result?.error) {
-        setError("邮箱或密码错误");
-      } else {
-        router.push("/");
-        router.refresh();
-      }
-    } catch (err) {
-      setError("登录失败，请稍后重试");
-    } finally {
-      setLoading(false);
+    setLoading(false);
+    if (signInError) {
+      setError("邮箱或密码错误");
+      return;
     }
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -43,9 +38,7 @@ export default function LoginPage() {
         <div className="card p-8">
           <div className="mb-8 text-center">
             <h1 className="heading text-3xl text-white">登录</h1>
-            <p className="mt-2 text-sm text-slate-400">
-              登录后可保存预测、关注球队、参与排行榜
-            </p>
+            <p className="mt-2 text-sm text-slate-400">登录后可保存预测、关注球队、参与排行榜</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,17 +66,13 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="至少6位"
                 required
                 className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder:text-slate-500 focus:border-emerald-400/50 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
               />
             </div>
 
-            {error && (
-              <div className="rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-400">{error}</div>}
 
             <button
               type="submit"

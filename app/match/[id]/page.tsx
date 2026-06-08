@@ -8,6 +8,7 @@ import { Countdown } from "@/components/Countdown";
 import { safeMatch } from "@/lib/ai";
 import { getWorldCupMarkets } from "@/lib/polymarket";
 import { formMarks, getTeamInsight } from "@/lib/team-insights";
+import { MatchPredictionForm } from "@/components/MatchPredictionForm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -65,6 +66,19 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </section>
+
+      <MatchPredictionForm
+        matchId={m.id}
+        homeLabel={h.zh}
+        awayLabel={a.zh}
+        kickoff={m.kickoff}
+        modelSnapshot={{
+          home: p.home,
+          draw: p.draw,
+          away: p.away,
+          confidence: analysis.confidence,
+        }}
+      />
 
       <section className="zen-panel rounded-2xl p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-emerald-400/15 pb-3">

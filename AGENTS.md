@@ -134,8 +134,8 @@ Production currently depends on these Vercel environment variables:
 - `AI_API_KEY`
 - `AI_MODEL`
 - `AI_FALLBACK_MODELS`
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 Keep `.env.local` local only. Do not commit secrets.
 
@@ -147,21 +147,22 @@ Keep `.env.local` local only. Do not commit secrets.
 - Vercel CLI is installed and authenticated for `qianzhu18`.
 - Production environment variables exist in Vercel.
 - `pnpm build` passes locally.
-- Vercel production deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` is `Ready` and aliased to `https://worldcup-polymarket-win.vercel.app`.
+- Vercel production deployment `dpl_Gdfy96uAKDur4htYPc6QUjeNxgYh` is `Ready` and aliased to `https://worldcup-polymarket-win.vercel.app`.
 - Public pages render from generated World Cup data and Polymarket/mock-market fallback paths.
+- User accounts use Supabase Auth, and P0 match predictions/favorites use Supabase Postgres with RLS.
 
 ### Not Yet Production-Grade
 
-- User accounts are demo-grade. `lib/db.ts` uses local SQLite through `better-sqlite3`; Vercel serverless storage is not a durable user database. Move users, predictions, favorites, and signal history to Neon, Supabase, Vercel Postgres, Turso, or another managed database before real user launch.
 - AI calls can slow builds or requests. The homepage calls `safeChampion()` during static generation/ISR. The previous Vercel build needed a retry because the primary AI model timed out after 60 seconds. Move AI pricing to an API route with durable cache, shorten timeout budgets, or precompute via scheduled jobs before heavy traffic.
 - Preview/development Vercel env parity is incomplete. `vercel env ls` currently shows production variables; preview deployments need equivalent non-production values before they can be trusted.
 - There is no custom production domain configured in this repo. The current public URL is a Vercel subdomain.
-- Auth has a code fallback secret in `lib/auth.ts`. Production has `NEXTAUTH_SECRET`, but the code should fail fast in production if the secret is missing.
+- Signal/snapshot writes are best-effort until a server-only Supabase secret/service key is configured; user predictions are the P0 durable multiplayer surface.
 - Prediction-market compliance needs product/legal copy before broad promotion: risk disclosure exists, but privacy policy, terms, jurisdiction guidance, and analytics consent are not complete.
 - Observability is thin. Add error monitoring, deployment checks, and uptime monitoring before relying on the service publicly.
 
 ## Documentation Version
 
+- 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.
 - 2026-06-09.1: Added project workflow, Vercel deployment SOP, environment inventory, and launch-readiness assessment.

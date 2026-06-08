@@ -1,20 +1,33 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function AuthButton() {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
-  if (status === "loading") {
-    return (
-      <div className="h-8 w-20 animate-pulse rounded-lg bg-white/10" />
-    );
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+      setLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div className="h-8 w-20 animate-pulse rounded-lg bg-white/10" />;
   }
 
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="flex items-center gap-2">
         <Link
@@ -33,6 +46,8 @@ export function AuthButton() {
     );
   }
 
+  const displayName = user.user_metadata?.name || user.email || "Player";
+
   return (
     <div className="relative">
       <button
@@ -40,9 +55,9 @@ export function AuthButton() {
         className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:text-white"
       >
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
-          {session.user.name?.[0] || session.user.email?.[0]?.toUpperCase() || "U"}
+          {String(displayName)[0]?.toUpperCase() || "U"}
         </div>
-        <span className="hidden sm:inline">{session.user.name || session.user.email}</span>
+        <span className="hidden sm:inline">{displayName}</span>
       </button>
 
       {showMenu && (
@@ -50,8 +65,8 @@ export function AuthButton() {
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
           <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-white/10 bg-[#0a1929] p-1 shadow-xl">
             <div className="border-b border-white/10 px-3 py-2">
-              <div className="text-sm font-medium text-white">{session.user.name}</div>
-              <div className="text-xs text-slate-400">{session.user.email}</div>
+              <div className="text-sm font-medium text-white">{displayName}</div>
+              <div className="text-xs text-slate-400">{user.email}</div>
             </div>
             <Link
               href="/profile"
@@ -68,9 +83,10 @@ export function AuthButton() {
               我的预测
             </Link>
             <button
-              onClick={() => {
+              onClick={async () => {
                 setShowMenu(false);
-                signOut();
+                await createSupabaseBrowserClient().auth.signOut();
+                window.location.href = "/";
               }}
               className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-400 transition hover:bg-white/5"
             >
