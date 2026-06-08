@@ -37,10 +37,10 @@
 |----|------|
 | **框架** | Next.js 15 (App Router) + React 19 + TypeScript |
 | **样式** | Tailwind CSS 3 · 自定义「潮牌 Hype」设计系统（Anton 冲击字、霓虹辉光、脉冲动效） |
-| **AI** | MiniMax（中国节点）`MiniMax-Text-01` · 对市场盲测独立定价 · 30 分钟内存缓存 |
+| **AI** | TokenDance OpenAI-compatible Gateway · `minimax-m3:free` + fallback models · 对市场盲测独立定价 · 30 分钟内存缓存 |
 | **数据** | Polymarket Gamma API（公开免 key，实时）· 自生成 48 队 / 104 场 / 1255 球员数据集 |
 | **模型** | Elo + 教练胜率 + 近期状态 + 阵容评分多因子调整 · Poisson 比分矩阵 |
-| **部署** | Cloudflare Workers（OpenNext 适配）· 全球 300+ 边缘节点 · 359 页静态预渲染 |
+| **部署** | Vercel · Next.js App Router · 259 个页面/路由产物 · Cloudflare OpenNext 配置保留为备用路径 |
 
 ---
 
@@ -50,7 +50,7 @@
 # 1. 安装依赖
 pnpm install
 
-# 2. 本地开发（需 .env.local 配置 MiniMax key）
+# 2. 本地开发（需 .env.local 配置 AI 网关 key）
 pnpm dev          # http://localhost:3000
 
 # 3. 刷新世界杯数据（赛程/球队/球员）
@@ -63,9 +63,12 @@ pnpm build && pnpm start
 ### 环境变量（`.env.local`，不进版本库）
 
 ```env
-MINIMAX_API_KEY=your_key_here
-MINIMAX_BASE_URL=https://api.minimax.chat
-MINIMAX_MODEL=MiniMax-Text-01
+AI_BASE_URL=https://tokendance.space/gateway/v1
+AI_API_KEY=your_key_here
+AI_MODEL=minimax-m3:free
+AI_FALLBACK_MODELS=deepseek-v4-pro,qwen3.7-max
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=replace_with_a_strong_secret
 ```
 
 ---
@@ -130,21 +133,34 @@ MINIMAX_MODEL=MiniMax-Text-01
 
 ---
 
-## 部署到 Cloudflare
+## 部署到 Vercel
 
 ```bash
-# 一次性完整部署
-rm -rf .next .open-next
-pnpm build
-npx opennextjs-cloudflare build
-npx wrangler deploy
+# 1. 同步 Vercel 项目配置（首次或环境变化时）
+pnpm vercel:pull
 
-# 上传 MiniMax key（首次）
-echo "your_key" | npx wrangler secret put MINIMAX_API_KEY
+# 2. 本地生产构建校验
+pnpm build
+
+# 3. 预览部署
+pnpm deploy:preview
+
+# 4. 生产部署
+pnpm deploy:prod
 ```
 
 **已部署：** https://worldcup-polymarket-win.vercel.app
 **版本：** Next.js 15 + Vercel · AI 信号融合
+
+### Cloudflare 备用路径
+
+仓库仍保留 `wrangler.jsonc`、`open-next.config.ts` 和 `cf:*` 脚本；当前主上线链路以 Vercel 为准。
+
+### 正式上线前缺口
+
+- 账号系统目前使用本地 SQLite，适合演示，不适合作为 Vercel 上的持久生产用户库。
+- 首页 AI 定价会在构建/ISR 阶段触发，历史 Vercel 构建曾因 AI 超时重试；正式推广前建议迁移到 API route + 持久缓存或定时预计算。
+- 当前公开域名是 Vercel 子域名，尚未配置自定义域名、监控、隐私政策和完整合规说明。
 
 ---
 

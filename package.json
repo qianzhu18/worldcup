@@ -2,6 +2,7 @@
   "name": "worldcup-predict",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.26.2",
   "scripts": {
     "clean": "node scripts/clean-next-cache.mjs",
     "predev": "pnpm clean",
@@ -11,6 +12,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "deploy:preview": "vercel --yes",
+    "deploy:prod": "vercel --prod --yes",
+    "vercel:pull": "vercel pull --yes",
     "cf:build": "pnpm clean && opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
     "cf:preview": "pnpm clean && opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare preview",
     "cf:deploy": "pnpm clean && opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare deploy"
