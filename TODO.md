@@ -1,6 +1,6 @@
 # World Cup Project Todo
 
-Version: 2026-06-09.7
+Version: 2026-06-09.8
 Updated: 2026-06-09
 
 ## Current Task: Vercel Deployment And Launch Readiness
@@ -23,6 +23,7 @@ Updated: 2026-06-09
 - [x] Optimize `/api/signals` default path so AI and tracking writes are opt-in.
 - [x] Deploy and verify launch-hardening changes.
 - [x] Add app-side Supabase email confirmation redirect support.
+- [x] Deploy self-hosted Uptime Kuma on the US server for first-pass uptime monitoring.
 
 ## True Launch Todo
 
@@ -37,6 +38,7 @@ Updated: 2026-06-09
 - [x] `/api/signals` defaults to market+model only; use `?ai=true` for AI and `?track=true` for best-effort tracking.
 - [x] Registration now sends verified users back to `/login?verified=1`.
 - [x] `/auth/confirm` can verify Supabase email OTP links when the hosted email template is switched to the SSR token-hash format.
+- [x] Uptime Kuma is running at `http://107.174.53.171:3001` with monitors for production home, login, signals API, and auth confirmation route.
 
 ### Needs User Decision Or Credentials
 
@@ -48,7 +50,7 @@ Updated: 2026-06-09
   - SMTP sender: choose and verify a domain-backed provider before broad public launch.
 - [ ] Real signup test: use a real inbox to register, confirm email if required, log in, submit one prediction, and confirm it appears in `/predictions`.
 - [ ] Server-only Supabase secret/service key: provide a Vercel-only env var name/value such as `SUPABASE_SERVICE_ROLE_KEY` if signal/snapshot writes should be durable.
-- [ ] Monitoring/analytics choice: default recommendation is self-hosted PostHog for product analytics/session replay/experiments, Uptime Kuma for uptime, and GlitchTip or Sentry self-hosted for errors. Avoid Microsoft Clarity as the primary analytics store if strict data ownership is required.
+- [ ] Monitoring/analytics choice: Uptime Kuma is configured. Self-hosted PostHog still needs a larger server; current server is 1 vCPU, 1GB RAM, and about 8GB free disk, which is not enough for PostHog.
 - [ ] Legal/compliance review: confirm jurisdiction wording, age restrictions, terms/privacy wording, contact method, analytics consent, and prediction-market risk copy.
 
 ### Codex Can Do After User Input
@@ -58,6 +60,8 @@ Updated: 2026-06-09
 - [ ] Refactor `?track=true` signal/snapshot writes to use a server-only Supabase admin client and scheduled route.
 - [ ] Move expensive AI calls into durable cache or scheduled precompute.
 - [ ] Add selected monitoring/analytics SDK and alert checks.
+- [ ] Add an Uptime Kuma notification channel after choosing destination: email SMTP, Telegram, Slack, Discord, Feishu, or webhook.
+- [ ] Provision a larger analytics server before installing PostHog: minimum 4GB RAM, recommended 8GB+ RAM, 2+ vCPU, and 50GB+ disk.
 - [ ] Add first-party product event taxonomy: visit, signup_start, signup_verified, login_success, match_view, prediction_submit, signal_view, signal_filter, outbound_click.
 - [ ] Add analytics consent/privacy copy before enabling heatmaps or session replay broadly.
 - [ ] Update Privacy/Terms with your legal and brand wording.
@@ -85,3 +89,4 @@ Updated: 2026-06-09
 - `/api/signals` now skips request-time AI and Supabase tracking writes by default; explicit query params can still run those slower paths.
 - App-side Supabase Auth email redirect support was added on 2026-06-09. Hosted Supabase Site URL, Redirect URLs, SMTP sender, and optional email template still need Dashboard or Management API configuration.
 - Supabase Auth email redirect support was deployed to production as `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j`; production smoke passed after deployment.
+- Uptime Kuma was deployed on `107.174.53.171` on 2026-06-09. Four production monitors are active and the first heartbeat checks passed. PostHog and GlitchTip were intentionally not installed on this host because the server is already memory constrained.

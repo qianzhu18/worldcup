@@ -195,11 +195,32 @@ Data ownership is a product requirement. Prefer self-hosted or first-party stora
 - Metrics/logs later: Grafana with Prometheus and Loki.
 - Microsoft Clarity is useful and free for heatmaps/session replay, but it should not be the source of truth if user-behavior data must remain under our control.
 
+## Self-Hosted Observability Node
+
+- Server IP: `107.174.53.171`
+- OS: Debian GNU/Linux 12
+- Current observed resources: 1 vCPU, about 1GB RAM, 24GB root disk with about 8GB free after Uptime Kuma install.
+- Docker and Docker Compose are installed.
+- Uptime Kuma:
+  - URL: `http://107.174.53.171:3001`
+  - Compose path: `/opt/observability/uptime-kuma/compose.yaml`
+  - Container: `uptime-kuma`
+  - Image: `louislam/uptime-kuma:2-slim`
+  - Memory cap: `192m`
+  - Configured monitors:
+    - `WorldCup Production Home` -> `https://worldcup-polymarket-win.vercel.app/`
+    - `WorldCup Login Page` -> `https://worldcup-polymarket-win.vercel.app/login`
+    - `WorldCup Signals API` -> `https://worldcup-polymarket-win.vercel.app/api/signals`
+    - `WorldCup Auth Confirm Route` -> `https://worldcup-polymarket-win.vercel.app/auth/confirm`
+
+Do not store observability passwords or server credentials in the repo. Rotate SSH credentials after setup. This server is too small and already too busy for self-hosted PostHog; use a larger server before installing analytics infrastructure.
+
 ## Documentation Version
 
 - 2026-06-09.5: Added Vercel Git connection, production smoke test, basic privacy/terms pages, and launch-finalization TODO ownership.
 - 2026-06-09.6: Added Supabase Auth email redirect support and self-owned observability/analytics guidance.
 - 2026-06-09.7: Recorded production deployment `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j` and post-deploy smoke pass.
+- 2026-06-09.8: Recorded self-hosted Uptime Kuma deployment and noted PostHog server sizing blocker.
 - 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.
