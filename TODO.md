@@ -61,13 +61,13 @@ Updated: 2026-06-09
 - Production Vercel env vars exist: `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_FALLBACK_MODELS`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - Local `pnpm build` passed and produced 259 routes/pages.
 - Previous production Vercel deployment is `Ready`, but logs show the homepage AI call timed out once and triggered a Vercel static-generation retry.
-- New production deployment completed with `pnpm deploy:prod`: `dpl_Gdfy96uAKDur4htYPc6QUjeNxgYh`.
-- Launch-hardening production deployment completed with `pnpm deploy:prod`, then GitHub auto-deployment also completed after push.
+- Previous production deployment completed with `pnpm deploy:prod`: `dpl_Gdfy96uAKDur4htYPc6QUjeNxgYh`.
+- Launch-hardening production deployment completed with `pnpm deploy:prod`: `dpl_2MRtnQJSy2gRKdkB5NUuw9S55i4u`.
 - Production alias verified: `https://worldcup-polymarket-win.vercel.app`.
 - HTTP checks passed for `/`, `/login`, `/match/m1`, `/profile`, `/predictions`, `/api/predictions`, and `/api/signals`.
 - Original push was blocked because GitHub rejected the current `qianzhu18` credentials for `yomislight/worldcup-polymarket-win` with HTTP 403.
 - Remote was switched and pushed to `https://github.com/qianzhu18/worldcup.git`.
 - P0 multiplayer backend is migrated to Supabase Auth + Postgres RLS.
-- Production smoke test passed, with one warning: `/api/signals` responded but took about 38s after the launch-hardening deployment.
+- Production smoke test passed, with one warning: `/api/signals` responded but took about 37.4s after the launch-hardening deployment.
 - Vercel Preview env variables could not be added globally from CLI; Vercel required a non-production Git branch target, and `main` is not allowed because it is the Production Branch.
 - Local build showed homepage AI calls can trigger 60s static-generation retries; default build path no longer calls champion AI.
