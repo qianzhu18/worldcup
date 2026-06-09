@@ -154,13 +154,14 @@ Keep `.env.local` local only. Do not commit secrets.
 - Basic `/privacy` and `/terms` pages exist.
 - Production smoke test exists: `pnpm test:smoke:prod`.
 - Homepage build-time AI champion pricing is disabled unless `ENABLE_BUILD_AI_CHAMPION=true`; use precompute/cache before enabling in production builds.
+- `/api/signals` defaults to a fast market+model path; `?ai=true` enables AI, and `?track=true` enables best-effort tracking writes.
 
 ### Not Yet Production-Grade
 
-- AI calls can slow requests. Homepage build-time champion AI is currently opt-in, but `/api/signals` can still be slow. Move AI pricing/signals to durable cache, shorten timeout budgets, or precompute via scheduled jobs before heavy traffic.
+- AI calls can still slow explicit AI paths. Homepage build-time champion AI is currently opt-in, and `/api/signals?ai=true` has a short fallback timeout. Move AI pricing/signals to durable cache or scheduled precompute before heavy traffic.
 - Preview Vercel env parity is incomplete. The CLI required a non-production Git branch target for Preview env vars; configure Preview branch variables after choosing the branch strategy.
 - There is no custom production domain configured in this repo. The current public URL is a Vercel subdomain.
-- Signal/snapshot writes are best-effort until a server-only Supabase secret/service key is configured; user predictions are the P0 durable multiplayer surface.
+- Signal/snapshot writes are opt-in best-effort until a server-only Supabase secret/service key is configured; user predictions are the P0 durable multiplayer surface.
 - Prediction-market compliance needs legal review before broad promotion: risk disclosure, privacy policy, and terms exist, but jurisdiction guidance, age restrictions, and analytics consent are not complete.
 - Observability is still thin. GitHub Actions smoke testing exists; add real alerting, error monitoring, and uptime monitoring before relying on the service publicly.
 

@@ -79,7 +79,7 @@ export function SignalDashboard() {
 
   const fetchSignals = async () => {
     try {
-      const res = await fetch("/api/signals?performance=true");
+      const res = await fetch("/api/signals");
       if (!res.ok) throw new Error("Failed to fetch signals");
       const json = await res.json();
       setData(json);

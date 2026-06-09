@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const includePerformance = searchParams.get("performance") === "true";
+    const includeAi = searchParams.get("ai") === "true";
+    const track = searchParams.get("track") === "true";
 
     // Fetch live market data
     const markets = await getWorldCupMarkets();
@@ -17,34 +19,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No winner market found" }, { status: 404 });
     }
 
-    // Fetch AI predictions
-    const aiChampion = await safeChampion();
+    // Fetch AI predictions only when explicitly requested. The live dashboard
+    // prioritizes responsiveness and can still rank signals from market+model.
+    const aiChampion = includeAi ? await withTimeout(safeChampion(), 8000, []) : [];
 
     // Compute edge signals
     const signals = rankChampionSignals(winner.outcomes, aiChampion);
 
-    // Record signals and snapshots for tracking
-    for (const signal of signals) {
-      await recordSignal({
-        signalType: "champion",
-        targetId: signal.teamCode,
-        marketProb: signal.marketProb,
-        modelProb: signal.modelProb,
-        aiProb: signal.aiProb,
-        fusedProb: signal.fusedProb,
-        edge: signal.adjustedEdge,
-        action: signal.action,
-        kellyFraction: signal.kellyFraction,
-        confidence: signal.confidence,
-      });
-
-      await captureMarketSnapshot(
-        winner.slug,
-        signal.team,
-        signal.marketProb,
-        winner.volume,
-        winner.liquidity,
-      );
+    // Durable tracking should run from a scheduled/admin context. Keep request-time
+    // writes opt-in so public reads stay fast even when Supabase or RLS is slow.
+    if (track) {
+      void recordSignalsBestEffort(winner, signals);
     }
 
     // Portfolio risk assessment
@@ -53,7 +38,7 @@ export async function GET(request: Request) {
     // Performance stats (optional)
     let performance = null;
     if (includePerformance) {
-      performance = await getSignalPerformance("champion", 30);
+      performance = await withTimeout(getSignalPerformance("champion", 30), 3000, null);
     }
 
     return NextResponse.json({
@@ -119,4 +104,52 @@ function roundPct(n: number): number {
 
 function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function recordSignalsBestEffort(
+  winner: {
+    slug: string;
+    volume?: number;
+    liquidity?: number;
+  },
+  signals: ReturnType<typeof rankChampionSignals>,
+) {
+  await Promise.allSettled(
+    signals.map(async (signal) => {
+      await recordSignal({
+        signalType: "champion",
+        targetId: signal.teamCode,
+        marketProb: signal.marketProb,
+        modelProb: signal.modelProb,
+        aiProb: signal.aiProb,
+        fusedProb: signal.fusedProb,
+        edge: signal.adjustedEdge,
+        action: signal.action,
+        kellyFraction: signal.kellyFraction,
+        confidence: signal.confidence,
+      });
+
+      await captureMarketSnapshot(
+        winner.slug,
+        signal.team,
+        signal.marketProb,
+        winner.volume,
+        winner.liquidity,
+      );
+    }),
+  );
 }

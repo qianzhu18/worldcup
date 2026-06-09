@@ -162,7 +162,7 @@ pnpm deploy:prod
 
 - 首页构建期 AI 定价已默认关闭，正式推广前建议迁移到持久缓存或定时预计算后再打开。
 - 当前公开域名是 Vercel 子域名，尚未配置自定义域名、第三方监控和完整法律审阅。
-- 信号和快照写入仍是 best-effort，正式高流量前需要 server-only Supabase secret/service key、定时任务和错误监控。
+- 信号和快照写入仍是 opt-in best-effort，正式高流量前需要 server-only Supabase secret/service key、定时任务和错误监控。
 
 ---
 
