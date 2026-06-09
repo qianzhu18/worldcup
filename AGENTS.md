@@ -147,7 +147,7 @@ Keep `.env.local` local only. Do not commit secrets.
 - Vercel CLI is installed and authenticated for `qianzhu18`.
 - Production environment variables exist in Vercel.
 - `pnpm build` passes locally.
-- Latest Vercel production deployment is `Ready` and aliased to `https://worldcup-polymarket-win.vercel.app`; use `vercel inspect worldcup-polymarket-win.vercel.app` for the current deployment ID.
+- Latest Vercel production deployment is `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j`, `Ready`, and aliased to `https://worldcup-polymarket-win.vercel.app`; use `vercel inspect worldcup-polymarket-win.vercel.app` for fresh status.
 - Vercel project is connected to GitHub repository `qianzhu18/worldcup`.
 - Public pages render from generated World Cup data and Polymarket/mock-market fallback paths.
 - User accounts use Supabase Auth, and P0 match predictions/favorites use Supabase Postgres with RLS.
@@ -199,6 +199,7 @@ Data ownership is a product requirement. Prefer self-hosted or first-party stora
 
 - 2026-06-09.5: Added Vercel Git connection, production smoke test, basic privacy/terms pages, and launch-finalization TODO ownership.
 - 2026-06-09.6: Added Supabase Auth email redirect support and self-owned observability/analytics guidance.
+- 2026-06-09.7: Recorded production deployment `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j` and post-deploy smoke pass.
 - 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.

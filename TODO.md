@@ -1,6 +1,6 @@
 # World Cup Project Todo
 
-Version: 2026-06-09.6
+Version: 2026-06-09.7
 Updated: 2026-06-09
 
 ## Current Task: Vercel Deployment And Launch Readiness
@@ -84,3 +84,4 @@ Updated: 2026-06-09
 - Local build showed homepage AI calls can trigger 60s static-generation retries; default build path no longer calls champion AI.
 - `/api/signals` now skips request-time AI and Supabase tracking writes by default; explicit query params can still run those slower paths.
 - App-side Supabase Auth email redirect support was added on 2026-06-09. Hosted Supabase Site URL, Redirect URLs, SMTP sender, and optional email template still need Dashboard or Management API configuration.
+- Supabase Auth email redirect support was deployed to production as `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j`; production smoke passed after deployment.
