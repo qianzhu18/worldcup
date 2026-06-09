@@ -152,6 +152,7 @@ pnpm deploy:prod
 **已部署：** https://worldcup-polymarket-win.vercel.app
 **版本：** Next.js 15 + Vercel · AI 信号融合
 **已完成：** Supabase Auth + Postgres RLS，支持登录用户保存单场胜平负预测。
+**自测：** `pnpm test:smoke:prod`
 
 ### Cloudflare 备用路径
 
@@ -159,8 +160,8 @@ pnpm deploy:prod
 
 ### 正式上线前缺口
 
-- 首页 AI 定价会在构建/ISR 阶段触发，历史 Vercel 构建曾因 AI 超时重试；正式推广前建议迁移到 API route + 持久缓存或定时预计算。
-- 当前公开域名是 Vercel 子域名，尚未配置自定义域名、监控、隐私政策和完整合规说明。
+- 首页构建期 AI 定价已默认关闭，正式推广前建议迁移到持久缓存或定时预计算后再打开。
+- 当前公开域名是 Vercel 子域名，尚未配置自定义域名、第三方监控和完整法律审阅。
 - 信号和快照写入仍是 best-effort，正式高流量前需要 server-only Supabase secret/service key、定时任务和错误监控。
 
 ---

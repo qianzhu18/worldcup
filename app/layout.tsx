@@ -76,7 +76,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </div>
               <div className="border-t border-white/10 px-6 py-3 text-center text-[11px] text-slate-500 md:px-8">
-                {"盘口数据来自 Polymarket 公开 API（实时）· AI 分析由 TokenDance 多模型路由生成。仅供信息参考，非投资建议。"}
+                <div>
+                  {"盘口数据来自 Polymarket 公开 API（实时）· AI 分析由 TokenDance 多模型路由生成。仅供信息参考，非投资建议。"}
+                </div>
+                <div className="mt-2 flex flex-wrap justify-center gap-3">
+                  <a href="/privacy" className="text-slate-400 hover:text-emerald-300">
+                    隐私政策
+                  </a>
+                  <a href="/terms" className="text-slate-400 hover:text-emerald-300">
+                    服务条款
+                  </a>
+                </div>
               </div>
             </div>
           </footer>

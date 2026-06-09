@@ -147,21 +147,26 @@ Keep `.env.local` local only. Do not commit secrets.
 - Vercel CLI is installed and authenticated for `qianzhu18`.
 - Production environment variables exist in Vercel.
 - `pnpm build` passes locally.
-- Vercel production deployment `dpl_Gdfy96uAKDur4htYPc6QUjeNxgYh` is `Ready` and aliased to `https://worldcup-polymarket-win.vercel.app`.
+- Latest Vercel production deployment is `Ready` and aliased to `https://worldcup-polymarket-win.vercel.app`; use `vercel inspect worldcup-polymarket-win.vercel.app` for the current deployment ID.
+- Vercel project is connected to GitHub repository `qianzhu18/worldcup`.
 - Public pages render from generated World Cup data and Polymarket/mock-market fallback paths.
 - User accounts use Supabase Auth, and P0 match predictions/favorites use Supabase Postgres with RLS.
+- Basic `/privacy` and `/terms` pages exist.
+- Production smoke test exists: `pnpm test:smoke:prod`.
+- Homepage build-time AI champion pricing is disabled unless `ENABLE_BUILD_AI_CHAMPION=true`; use precompute/cache before enabling in production builds.
 
 ### Not Yet Production-Grade
 
-- AI calls can slow builds or requests. The homepage calls `safeChampion()` during static generation/ISR. The previous Vercel build needed a retry because the primary AI model timed out after 60 seconds. Move AI pricing to an API route with durable cache, shorten timeout budgets, or precompute via scheduled jobs before heavy traffic.
-- Preview/development Vercel env parity is incomplete. `vercel env ls` currently shows production variables; preview deployments need equivalent non-production values before they can be trusted.
+- AI calls can slow requests. Homepage build-time champion AI is currently opt-in, but `/api/signals` can still be slow. Move AI pricing/signals to durable cache, shorten timeout budgets, or precompute via scheduled jobs before heavy traffic.
+- Preview Vercel env parity is incomplete. The CLI required a non-production Git branch target for Preview env vars; configure Preview branch variables after choosing the branch strategy.
 - There is no custom production domain configured in this repo. The current public URL is a Vercel subdomain.
 - Signal/snapshot writes are best-effort until a server-only Supabase secret/service key is configured; user predictions are the P0 durable multiplayer surface.
-- Prediction-market compliance needs product/legal copy before broad promotion: risk disclosure exists, but privacy policy, terms, jurisdiction guidance, and analytics consent are not complete.
-- Observability is thin. Add error monitoring, deployment checks, and uptime monitoring before relying on the service publicly.
+- Prediction-market compliance needs legal review before broad promotion: risk disclosure, privacy policy, and terms exist, but jurisdiction guidance, age restrictions, and analytics consent are not complete.
+- Observability is still thin. GitHub Actions smoke testing exists; add real alerting, error monitoring, and uptime monitoring before relying on the service publicly.
 
 ## Documentation Version
 
+- 2026-06-09.5: Added Vercel Git connection, production smoke test, basic privacy/terms pages, and launch-finalization TODO ownership.
 - 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.

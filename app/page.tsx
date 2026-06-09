@@ -29,8 +29,8 @@ export default async function Home() {
   const openingHome = openingMatch.home ? codeToTeam.get(openingMatch.home)?.zh : openingMatch.homeLabel;
   const openingAway = openingMatch.away ? codeToTeam.get(openingMatch.away)?.zh : openingMatch.awayLabel;
 
-  // AI (TokenDance) independent champion pricing vs Polymarket implied prob.
-  const aiChamp = await safeChampion();
+  // Build-time AI can exceed static generation limits; keep it opt-in until precomputed.
+  const aiChamp = process.env.ENABLE_BUILD_AI_CHAMPION === "true" ? await safeChampion() : [];
   const marketByCode = new Map<string, number>();
   if (winner)
     for (const o of winner.outcomes) {
