@@ -429,19 +429,20 @@ export function rankChampionSignals(
   marketOutcomes: { label: string; price: number }[],
   aiChampion?: AiChampion[],
 ): RankedSignal[] {
-  const aiMap = new Map((aiChampion ?? []).map((a) => [a.code, a]));
+  const aiByName = new Map((aiChampion ?? []).map((a) => [a.name, a]));
+  const modelCodeByName = new Map(championProbabilities().map((c) => [c.team.name, c.team.code]));
 
   const signals = marketOutcomes
     .map((o) => {
-      // Find team code from name
-      const aiEntry = aiChampion?.find((a) => a.name === o.label);
-      if (!aiEntry) return null;
+      const aiEntry = aiByName.get(o.label);
+      const teamCode = aiEntry?.code ?? modelCodeByName.get(o.label);
+      if (!teamCode) return null;
 
       return computeChampionEdge(
-        aiEntry.code,
+        teamCode,
         o.price,
-        aiEntry.prob,
-        aiEntry.factors,
+        aiEntry?.prob,
+        aiEntry?.factors,
       );
     })
     .filter(Boolean) as EdgeSignal[];

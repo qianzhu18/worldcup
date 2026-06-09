@@ -12,7 +12,7 @@ const links = [
 ];
 
 export function Nav() {
-  const path = usePathname();
+  const path = usePathname() ?? "/";
   return (
     <header className="sticky top-0 z-50 border-b border-emerald-400/15 bg-[#05080f]/88 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
