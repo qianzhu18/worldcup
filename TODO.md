@@ -1,6 +1,6 @@
 # World Cup Project Todo
 
-Version: 2026-06-09.5
+Version: 2026-06-09.6
 Updated: 2026-06-09
 
 ## Current Task: Vercel Deployment And Launch Readiness
@@ -22,6 +22,7 @@ Updated: 2026-06-09
 - [x] Disable homepage build-time AI champion pricing by default.
 - [x] Optimize `/api/signals` default path so AI and tracking writes are opt-in.
 - [x] Deploy and verify launch-hardening changes.
+- [x] Add app-side Supabase email confirmation redirect support.
 
 ## True Launch Todo
 
@@ -34,14 +35,20 @@ Updated: 2026-06-09
 - [x] Scheduled GitHub Actions smoke test every 6 hours plus manual `workflow_dispatch`.
 - [x] Homepage build-time AI champion pricing is opt-in via `ENABLE_BUILD_AI_CHAMPION=true`.
 - [x] `/api/signals` defaults to market+model only; use `?ai=true` for AI and `?track=true` for best-effort tracking.
+- [x] Registration now sends verified users back to `/login?verified=1`.
+- [x] `/auth/confirm` can verify Supabase email OTP links when the hosted email template is switched to the SSR token-hash format.
 
 ### Needs User Decision Or Credentials
 
 - [ ] Custom domain: provide the domain name and confirm where DNS is managed. After that Codex can add it to Vercel and list DNS records.
-- [ ] Supabase Auth email: configure Site URL, redirect URLs, and email sender/SMTP in Supabase Dashboard. Use the final custom domain if one will be used.
+- [ ] Supabase Auth email Dashboard config:
+  - Site URL: `https://worldcup-polymarket-win.vercel.app` until a custom domain is configured.
+  - Redirect URLs: `https://worldcup-polymarket-win.vercel.app/login`, `https://worldcup-polymarket-win.vercel.app/auth/confirm`, and local development URLs such as `http://localhost:3000/**`.
+  - Email template, if using SSR token-hash confirmation: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}`.
+  - SMTP sender: choose and verify a domain-backed provider before broad public launch.
 - [ ] Real signup test: use a real inbox to register, confirm email if required, log in, submit one prediction, and confirm it appears in `/predictions`.
 - [ ] Server-only Supabase secret/service key: provide a Vercel-only env var name/value such as `SUPABASE_SERVICE_ROLE_KEY` if signal/snapshot writes should be durable.
-- [ ] Monitoring/analytics choice: confirm whether to enable Vercel Web Analytics, Vercel Speed Insights, Sentry, Better Stack, or another uptime tool.
+- [ ] Monitoring/analytics choice: default recommendation is self-hosted PostHog for product analytics/session replay/experiments, Uptime Kuma for uptime, and GlitchTip or Sentry self-hosted for errors. Avoid Microsoft Clarity as the primary analytics store if strict data ownership is required.
 - [ ] Legal/compliance review: confirm jurisdiction wording, age restrictions, terms/privacy wording, contact method, analytics consent, and prediction-market risk copy.
 
 ### Codex Can Do After User Input
@@ -51,6 +58,8 @@ Updated: 2026-06-09
 - [ ] Refactor `?track=true` signal/snapshot writes to use a server-only Supabase admin client and scheduled route.
 - [ ] Move expensive AI calls into durable cache or scheduled precompute.
 - [ ] Add selected monitoring/analytics SDK and alert checks.
+- [ ] Add first-party product event taxonomy: visit, signup_start, signup_verified, login_success, match_view, prediction_submit, signal_view, signal_filter, outbound_click.
+- [ ] Add analytics consent/privacy copy before enabling heatmaps or session replay broadly.
 - [ ] Update Privacy/Terms with your legal and brand wording.
 
 ## Findings Log
@@ -74,3 +83,4 @@ Updated: 2026-06-09
 - Vercel Preview env variables could not be added globally from CLI; Vercel required a non-production Git branch target, and `main` is not allowed because it is the Production Branch.
 - Local build showed homepage AI calls can trigger 60s static-generation retries; default build path no longer calls champion AI.
 - `/api/signals` now skips request-time AI and Supabase tracking writes by default; explicit query params can still run those slower paths.
+- App-side Supabase Auth email redirect support was added on 2026-06-09. Hosted Supabase Site URL, Redirect URLs, SMTP sender, and optional email template still need Dashboard or Management API configuration.

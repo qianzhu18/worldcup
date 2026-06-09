@@ -37,6 +37,7 @@ export default function RegisterPage() {
       email: normalizedEmail,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/login?verified=1`,
         data: { name: name.trim() || normalizedEmail.split("@")[0] },
       },
     });

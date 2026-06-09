@@ -151,6 +151,8 @@ Keep `.env.local` local only. Do not commit secrets.
 - Vercel project is connected to GitHub repository `qianzhu18/worldcup`.
 - Public pages render from generated World Cup data and Polymarket/mock-market fallback paths.
 - User accounts use Supabase Auth, and P0 match predictions/favorites use Supabase Postgres with RLS.
+- Registration sets an explicit email verification redirect to `/login?verified=1`.
+- `/auth/confirm` exists for Supabase SSR token-hash email confirmation links.
 - Basic `/privacy` and `/terms` pages exist.
 - Production smoke test exists: `pnpm test:smoke:prod`; the latest production run passed, including `/api/signals`.
 - Homepage build-time AI champion pricing is disabled unless `ENABLE_BUILD_AI_CHAMPION=true`; use precompute/cache before enabling in production builds.
@@ -165,9 +167,38 @@ Keep `.env.local` local only. Do not commit secrets.
 - Prediction-market compliance needs legal review before broad promotion: risk disclosure, privacy policy, and terms exist, but jurisdiction guidance, age restrictions, and analytics consent are not complete.
 - Observability is still thin. GitHub Actions smoke testing exists; add real alerting, error monitoring, and uptime monitoring before relying on the service publicly.
 
+## Supabase Auth Email Configuration
+
+Application-side support exists, but hosted Supabase Auth settings still need Dashboard or Management API access.
+
+- Site URL: `https://worldcup-polymarket-win.vercel.app`
+- Redirect URLs:
+  - `https://worldcup-polymarket-win.vercel.app/login`
+  - `https://worldcup-polymarket-win.vercel.app/auth/confirm`
+  - `http://localhost:3000/**`
+- Recommended SSR email confirmation template:
+
+```text
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}
+```
+
+When a custom domain is added, replace the Vercel subdomain with the custom domain in Site URL and add matching redirect URLs before switching public traffic.
+
+## Observability And Analytics Preference
+
+Data ownership is a product requirement. Prefer self-hosted or first-party storage for behavior analytics.
+
+- Product analytics and strategy analysis: self-hosted PostHog if the team wants funnels, retention, cohorts, feature flags, experiments, session replay, and heatmaps in one stack.
+- Simple web analytics: self-hosted Umami or Plausible if only pageviews/referrers/conversions are needed.
+- Uptime: self-hosted Uptime Kuma for HTTP, keyword, JSON, TCP, DNS, and database checks.
+- Error monitoring: GlitchTip or Sentry self-hosted.
+- Metrics/logs later: Grafana with Prometheus and Loki.
+- Microsoft Clarity is useful and free for heatmaps/session replay, but it should not be the source of truth if user-behavior data must remain under our control.
+
 ## Documentation Version
 
 - 2026-06-09.5: Added Vercel Git connection, production smoke test, basic privacy/terms pages, and launch-finalization TODO ownership.
+- 2026-06-09.6: Added Supabase Auth email redirect support and self-owned observability/analytics guidance.
 - 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.
