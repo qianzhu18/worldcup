@@ -70,7 +70,7 @@ Updated: 2026-06-09
 - Original push was blocked because GitHub rejected the current `qianzhu18` credentials for `yomislight/worldcup-polymarket-win` with HTTP 403.
 - Remote was switched and pushed to `https://github.com/qianzhu18/worldcup.git`.
 - P0 multiplayer backend is migrated to Supabase Auth + Postgres RLS.
-- Production smoke test passed, with one warning: `/api/signals` responded but took about 37.4s after the launch-hardening deployment.
+- Production smoke test passed after signal API optimization; `/api/signals` responded in about 706ms on the final smoke run.
 - Vercel Preview env variables could not be added globally from CLI; Vercel required a non-production Git branch target, and `main` is not allowed because it is the Production Branch.
 - Local build showed homepage AI calls can trigger 60s static-generation retries; default build path no longer calls champion AI.
 - `/api/signals` now skips request-time AI and Supabase tracking writes by default; explicit query params can still run those slower paths.

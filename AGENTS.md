@@ -152,7 +152,7 @@ Keep `.env.local` local only. Do not commit secrets.
 - Public pages render from generated World Cup data and Polymarket/mock-market fallback paths.
 - User accounts use Supabase Auth, and P0 match predictions/favorites use Supabase Postgres with RLS.
 - Basic `/privacy` and `/terms` pages exist.
-- Production smoke test exists: `pnpm test:smoke:prod`.
+- Production smoke test exists: `pnpm test:smoke:prod`; the latest production run passed, including `/api/signals`.
 - Homepage build-time AI champion pricing is disabled unless `ENABLE_BUILD_AI_CHAMPION=true`; use precompute/cache before enabling in production builds.
 - `/api/signals` defaults to a fast market+model path; `?ai=true` enables AI, and `?track=true` enables best-effort tracking writes.
 
