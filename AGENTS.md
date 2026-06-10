@@ -202,7 +202,8 @@ Data ownership is a product requirement. Prefer self-hosted or first-party stora
 - Current observed resources: 1 vCPU, about 1GB RAM, 24GB root disk with about 8GB free after Uptime Kuma install.
 - Docker and Docker Compose are installed.
 - Uptime Kuma:
-  - URL: `http://107.174.53.171:3001`
+  - URL: `https://uptime.qianzhu.online`
+  - Direct fallback URL: `http://107.174.53.171:3001`
   - Compose path: `/opt/observability/uptime-kuma/compose.yaml`
   - Container: `uptime-kuma`
   - Image: `louislam/uptime-kuma:2-slim`
@@ -212,6 +213,13 @@ Data ownership is a product requirement. Prefer self-hosted or first-party stora
     - `WorldCup Login Page` -> `https://worldcup-polymarket-win.vercel.app/login`
     - `WorldCup Signals API` -> `https://worldcup-polymarket-win.vercel.app/api/signals`
     - `WorldCup Auth Confirm Route` -> `https://worldcup-polymarket-win.vercel.app/auth/confirm`
+  - Known qianzhu domain monitors were added from `/home/web/conf.d/*.conf`.
+
+Current certificate follow-up:
+
+- Renewed or validated during 2026-06-10 work: `uptime.qianzhu.online`, `dpanel.qianzhu.online`, `pansou.qianzhu.online`, and `speedtest.qianzhu.online`.
+- Still pending after SSH started closing during key exchange: `synctv.qianzhu.online`, `tv.qianzhu.online`, `monitor.qianzhu.online`, and `kuma.qianzhu.online`.
+- Resume by restoring SSH access, then run `/root/auto_cert_renewal.sh` with `DOMAIN=<host>` after ensuring each Nginx config exposes `/.well-known/acme-challenge/` on HTTP before redirecting.
 
 Do not store observability passwords or server credentials in the repo. Rotate SSH credentials after setup. This server is too small and already too busy for self-hosted PostHog; use a larger server before installing analytics infrastructure.
 
@@ -221,6 +229,7 @@ Do not store observability passwords or server credentials in the repo. Rotate S
 - 2026-06-09.6: Added Supabase Auth email redirect support and self-owned observability/analytics guidance.
 - 2026-06-09.7: Recorded production deployment `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j` and post-deploy smoke pass.
 - 2026-06-09.8: Recorded self-hosted Uptime Kuma deployment and noted PostHog server sizing blocker.
+- 2026-06-10.1: Recorded `uptime.qianzhu.online` reverse proxy, qianzhu domain monitors, partial certificate renewal, and SSH recovery blocker.
 - 2026-06-09.4: Migrated P0 multiplayer auth/prediction storage to Supabase Auth + Postgres RLS.
 - 2026-06-09.3: Added Supabase MCP configuration, Claude/Codex authentication notes, and installed Supabase Agent Skills.
 - 2026-06-09.2: Recorded production Vercel deployment `dpl_C3WTMSptjND9Rj8EoPUAJiLPJfw6` and verified production alias.

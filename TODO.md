@@ -1,6 +1,6 @@
 # World Cup Project Todo
 
-Version: 2026-06-09.8
+Version: 2026-06-10.1
 Updated: 2026-06-09
 
 ## Current Task: Vercel Deployment And Launch Readiness
@@ -39,6 +39,8 @@ Updated: 2026-06-09
 - [x] Registration now sends verified users back to `/login?verified=1`.
 - [x] `/auth/confirm` can verify Supabase email OTP links when the hosted email template is switched to the SSR token-hash format.
 - [x] Uptime Kuma is running at `http://107.174.53.171:3001` with monitors for production home, login, signals API, and auth confirmation route.
+- [x] Uptime Kuma is also available through `https://uptime.qianzhu.online`.
+- [x] Added service monitors for known `qianzhu.online` domains from the server Nginx configuration.
 
 ### Needs User Decision Or Credentials
 
@@ -61,6 +63,7 @@ Updated: 2026-06-09
 - [ ] Move expensive AI calls into durable cache or scheduled precompute.
 - [ ] Add selected monitoring/analytics SDK and alert checks.
 - [ ] Add an Uptime Kuma notification channel after choosing destination: email SMTP, Telegram, Slack, Discord, Feishu, or webhook.
+- [ ] Finish remaining origin certificate fixes after SSH access recovers: `synctv.qianzhu.online`, `tv.qianzhu.online`, `monitor.qianzhu.online`, and `kuma.qianzhu.online`.
 - [ ] Provision a larger analytics server before installing PostHog: minimum 4GB RAM, recommended 8GB+ RAM, 2+ vCPU, and 50GB+ disk.
 - [ ] Add first-party product event taxonomy: visit, signup_start, signup_verified, login_success, match_view, prediction_submit, signal_view, signal_filter, outbound_click.
 - [ ] Add analytics consent/privacy copy before enabling heatmaps or session replay broadly.
@@ -90,3 +93,4 @@ Updated: 2026-06-09
 - App-side Supabase Auth email redirect support was added on 2026-06-09. Hosted Supabase Site URL, Redirect URLs, SMTP sender, and optional email template still need Dashboard or Management API configuration.
 - Supabase Auth email redirect support was deployed to production as `dpl_CWT5EafPTwMNYEQbzTxgCkuhk66j`; production smoke passed after deployment.
 - Uptime Kuma was deployed on `107.174.53.171` on 2026-06-09. Four production monitors are active and the first heartbeat checks passed. PostHog and GlitchTip were intentionally not installed on this host because the server is already memory constrained.
+- `uptime.qianzhu.online` was configured on 2026-06-10 with a Let's Encrypt certificate and Nginx reverse proxy to Uptime Kuma. Known qianzhu subdomain monitors were added. `dpanel.qianzhu.online` and `pansou.qianzhu.online` certificates were renewed before SSH access started closing during key exchange; `speedtest.qianzhu.online` appears certificate-valid but returns 404 at `/`. Remaining certificate/proxy work is pending SSH recovery.
