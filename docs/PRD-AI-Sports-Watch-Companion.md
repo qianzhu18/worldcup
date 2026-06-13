@@ -1,513 +1,636 @@
-# PRD - AI Sports Watch Companion
+# JMWL AI 看球搭子产品方案
 
-Version: 2026-06-13.1
-Status: Product direction draft
-Product: JMWL Sports / JMWL World Cup
+版本：2026-06-13.2  
+状态：中文产品方向稿  
+当前项目：JMWL World Cup  
+长期产品：JMWL Sports
 
-## 1. Summary
+## 1. 一句话定位
 
-JMWL should evolve from a World Cup prediction-market dashboard into an AI sports watch companion. The product helps users decide what to watch, understand the likely outcome before kickoff, record simulated strategy choices, and review results after the match.
+JMWL 不是押注平台，也不只是赛程表。
 
-The first version should stay focused on World Cup matches. After proving the loop, the same product can extend to Premier League, Champions League, La Liga, Serie A, Bundesliga, Ligue 1, MLS, and national team tournaments.
+JMWL 是一个 **AI 看球搭子**：它像天气预报一样，在赛前帮用户看懂比赛热度、胜率、市场情绪和策略风险；赛后再帮用户复盘判断，慢慢形成个人看球画像。
 
-Recommended slogan:
+推荐 slogan：
 
 > 赛前有底，赛后有谱。
 
-Supporting line:
+辅助文案：
 
-> 你的 AI 看球搭子：像查天气一样看比赛。
+> 你的 AI 看球搭子，像查天气一样看比赛。
 
-## 2. Contacts
+## 2. 为什么要这么做
 
-| Name | Role | Comment |
-| --- | --- | --- |
-| Lucien / qianzhu | Founder / Product owner | Defines positioning, content tone, and portfolio value for resume/project showcase. |
-| Codex | Product and engineering collaborator | Helps with research, implementation, documentation, and validation. |
+现在项目已经有这些基础：
 
-## 3. Background
+- 世界杯赛程。
+- 球队和球员数据。
+- Polymarket 市场概率。
+- 本地模型胜率。
+- AI 分析。
+- 用户登录和预测记录。
 
-The current product already has a strong data foundation: World Cup schedule, team/player data, Polymarket market data, Elo-style model probabilities, AI analysis, and user prediction storage.
+但它现在最大的问题是：用户看完一眼胜率，为什么还要回来？
 
-The missing product loop is not "more prediction data." The missing loop is user memory:
+答案不是继续堆更多数据，而是要让产品记住用户：
 
-1. Before watching, the user wants to know which matches matter.
-2. Before kickoff, the user wants a clear probability and strategy view.
-3. During decision-making, the user wants to simulate a pick without using this product as a betting platform.
-4. After the match, the user wants feedback: was the strategy right, was the model wrong, or was the match just noisy?
-5. Over time, the product learns the user's style and becomes a personal watch companion.
+1. 用户关注哪些比赛。
+2. 用户采纳过哪些策略。
+3. 用户喜欢稳健、搏冷，还是反市场共识。
+4. 用户的判断有没有变好。
+5. 用户赛后能不能得到反馈。
 
-Market research supports this direction:
+所以产品闭环应该从“查胜率”变成：
 
-- Polymarket US sports docs list sports contract types such as winner, draw-aware winner, spread, total, futures, qualifiers, and player props, with official settlement rules. This means market probability can be a useful signal, but the product should not depend on every exact-score market existing. Source: [Polymarket Sports FAQs](https://docs.polymarket.us/faqs/sports-faqs).
-- Polymarket's June 2026 changelog shows active World Cup liquidity incentives and soccer market type work, including moneyline, spreads, totals, team props, and player props. Source: [Polymarket US Changelog](https://docs.polymarket.us/changelog).
-- MLS and Polymarket partnership coverage shows prediction markets are becoming a fan engagement layer, but also carry integrity and regulatory concerns. Sources: [ESPN](https://africa.espn.com/football/story/_/id/47737795/polymarket-mls-prediction-markets), [Front Office Sports](https://frontofficesports.com/mls-jumps-into-prediction-markets-with-polymarket-deal/).
-- FotMob, Sofascore, and Flashscore already own live scores, alerts, fixtures, stats, and where-to-watch workflows. Sources: [FotMob App Store](https://apps.apple.com/sa/app/fotmob-football-live-scores/id488575683), [Sofascore App Store](https://apps.apple.com/ma/app/sofascore-live-sports-scores/id1176147574), [Flashscore App Store](https://apps.apple.com/by/app/flashscore-live-scores-news/id766443283).
-- Sofascore already offers an AI football forecast and advanced match analytics feature, which proves the category is real. Source: [Sofascore AI Analyst](https://sofascore.helpscoutdocs.com/article/231-what-is-sofascore-analyst-ai-insights).
-- FotMob Predict shows that score prediction and friend competition are natural football engagement mechanics. Source: [FotMob Predict](https://predict.fotmob.com/).
-- Pikkit shows that users value bet tracking, social sharing, ROI, win rate, and performance breakdowns. JMWL should borrow the tracking/feedback idea but keep it as simulation and learning, not account-connected betting. Sources: [Pikkit](https://pikkit.com/), [Pikkit Bet Tracker](https://pikkit.com/bet-tracker).
+```text
+赛前看球天气 -> 采纳模拟策略 -> 赛后结算 -> AI 复盘 -> 形成个人画像 -> 下次继续看
+```
 
-## 4. Objective
+## 3. 产品不做什么
 
-Build a mobile-first watch companion that turns football matches into a daily "strategy weather" habit.
+这个边界很重要。
 
-The product should not say "we help you gamble." It should say:
+JMWL 不做：
 
-> We help football fans understand match probability, market sentiment, and their own decision style.
+- 不收钱押注。
+- 不托管资金。
+- 不撮合交易。
+- 不承诺盈利。
+- 不说“必中”“稳赚”。
+- 不把用户导向真实下注行为。
 
-### Key Results For MVP
+JMWL 做的是：
 
-1. Strategy adoption: at least 25% of signed-in users who view a strategy card click "采纳策略" or "加入观察".
-2. Return habit: at least 15% of users return before the next matchday after using the strategy page once.
-3. Feedback loop: at least 30% of adopted strategies get viewed again after settlement.
-4. Share signal: at least 5% of settled strategies produce a share card.
-5. Resume proof: collect at least 20 real user feedback entries or behavior sessions showing why users did or did not trust the strategy.
+- 概率解释。
+- 策略模拟。
+- 赛后复盘。
+- 看球陪伴。
+- 用户个人策略画像。
 
-## 5. Market Segments
+一句话：
 
-### Primary Segment: Casual But Curious Football Fans
+> 我们不替用户下注，只帮用户看懂比赛。
 
-Job to be done:
+## 4. 用户场景
 
-> Before I watch a match, I want to know whether it is worth watching and what the likely story is, so I can enjoy the game with more confidence and talk about it with others.
+### 场景一：赛前 30 分钟
 
-Pain:
+用户打开平台，不想看一堆复杂数据，只想知道：
 
-- Existing score apps are too event-focused.
-- Betting apps are too transactional and risky.
-- Public odds are hard to interpret.
-- AI predictions often feel like random tips with no memory.
+- 今晚有哪些重要比赛？
+- 哪场最值得看？
+- 哪场有冷门可能？
+- 哪场市场分歧最大？
+- 我心里应该怎么预期？
 
-### Secondary Segment: Strategy-Oriented Fans
+产品给出“比赛天气预报”：
 
-Job to be done:
+> 今晚 12 场里，真正值得关注的是 3 场。  
+> 法国 vs 德国是实力盘，美国 vs 巴拉圭是情绪盘，韩国 vs 捷克是分歧盘。
 
-> Before kickoff, I want to compare market probability, model probability, and my own intuition, so I can make a simulated strategy choice and learn from the result.
+### 场景二：看球前想有底
 
-Pain:
+用户点进一场比赛，看到：
 
-- They want to track whether their judgment is improving.
-- They want a private "paper betting" notebook.
-- They do not necessarily want to connect real sportsbook accounts.
+- Polymarket 市场概率。
+- JMWL 模型概率。
+- AI 解释。
+- 风险点。
+- 推荐策略。
 
-### Tertiary Segment: Content Creators / "Talk Football" Users
+例如：
 
-Job to be done:
+> 法国方向有轻微价值，但不是重仓局。  
+> 市场给法国 41%，JMWL 模型给 46%，Edge +5pt。  
+> 稳健策略：法国不败。  
+> 价值策略：法国胜。  
+> 杠铃策略：小注 2-1 或 1-0。
 
-> I want a compact pre-match view and post-match record, so I can explain matches in group chats, posts, or videos.
+### 场景三：模拟押注
 
-Pain:
+用户不在平台上真钱下注，只是在平台上记录：
 
-- It takes time to collect fixtures, probability, odds movement, team form, and talking points.
-- They need confident, shareable phrasing.
+- 我采纳这条策略。
+- 我观望。
+- 我反向。
+- 我只看球。
 
-## 6. Value Propositions
+这里使用“单位”，不用人民币：
 
-### Product Positioning
+- 0.5 单位。
+- 1 单位。
+- 2 单位。
 
-JMWL is not a sportsbook. JMWL is not only a live score app.
+这一步让用户从“看信息”变成“形成一次决策”。
 
-JMWL is:
+### 场景四：赛后复盘
 
-> An AI-powered match calendar and strategy weather app for football fans.
+比赛结束后，AI 告诉用户：
 
-### What Users Gain
+- 策略中了没有。
+- 这次判断质量怎么样。
+- 是模型错了，还是比赛随机性太强。
+- 用户更适合哪类策略。
 
-1. A curated watch list:
-   - Which matches matter tonight?
-   - Which matches have market disagreement?
-   - Which matches are worth waking up for?
+例如：
 
-2. A clear pre-match forecast:
-   - Market probability.
-   - Model probability.
-   - AI explanation.
-   - Confidence and risk.
+> 这场没中，但不是坏决策。  
+> 模型正确识别了法国的控球优势，错在低估早段红牌对节奏的影响。  
+> 你这次属于价值派选择，不建议因为单场结果改变长期策略。
 
-3. A strategy choice:
-   - Conservative strategy.
-   - Value strategy.
-   - Barbell strategy.
-   - Watch-only strategy.
+### 场景五：长期看球画像
 
-4. A personal record:
-   - What did I follow?
-   - Did it hit?
-   - Am I better at conservative picks or long-shot picks?
+用户用久之后，平台形成画像：
 
-5. A long-term companion:
-   - Favorite teams.
-   - Risk personality.
-   - Weekly recap.
-   - AI memory.
+- 稳健派。
+- 价值派。
+- 杠铃派。
+- 反共识派。
+- 主队信仰派。
+- 情绪看球派。
 
-### Why This Is Different
+例如：
 
-| Product Type | They Do Well | JMWL Difference |
-| --- | --- | --- |
-| FotMob / Sofascore / Flashscore | Live scores, fixtures, alerts, stats | JMWL focuses on pre-match decision context and personal strategy memory. |
-| Polymarket | Market probabilities and tradable contracts | JMWL turns market probability into fan-friendly watch and strategy guidance. |
-| Betting trackers like Pikkit | Real bet tracking and ROI analytics | JMWL starts with simulated strategy tracking to avoid betting-platform compliance risk. |
-| Generic AI prediction tools | Picks and explanations | JMWL combines market data, model data, AI reasoning, user history, and post-match feedback. |
+> 你过去 10 次搏冷只中了 1 次，但稳健策略 7 中 5。  
+> 你更适合低频、高确定性的策略。  
+> 本周建议减少精确比分玩法。
 
-## 7. Solution
+这就是“AI 看球搭子”的长期价值。
 
-### 7.1 Core User Flow
+## 5. 核心功能流程
 
 ```mermaid
 flowchart LR
-  A["Open app before watching"] --> B["AI match weather: important games"]
-  B --> C["Match strategy card"]
-  C --> D["User chooses: adopt / watch / oppose / skip"]
-  D --> E["Match result settles"]
-  E --> F["AI review: strategy hit or missed"]
-  F --> G["User profile updates"]
+  A["打开 JMWL"] --> B["今日看球天气"]
+  B --> C["进入比赛策略卡"]
+  C --> D["采纳 / 观望 / 反向 / 只看球"]
+  D --> E["比赛结束"]
+  E --> F["AI 赛后复盘"]
+  F --> G["更新用户画像"]
   G --> B
 ```
 
-### 7.2 Main Screens
+## 6. MVP 功能
 
-#### Today - Strategy Weather
+一个月内不要做大而全。先做能证明思路的版本。
 
-The first screen should answer:
+### 6.1 今日策略页
 
-- What should I watch today?
-- Which match has the highest importance?
-- Which match has the biggest probability disagreement?
-- Which match is risky and should be skipped?
+新增一个页面，例如 `/strategy`。
 
-Example copy:
+它展示未来 24 小时或当前比赛日最值得看的比赛：
 
-> 今晚 12 场里，真正值得看的有 3 场。美国 vs 巴拉圭是情绪盘，法国 vs 德国是实力盘，韩国 vs 捷克是分歧盘。
+- 比赛时间。
+- 重要程度。
+- 双方球队。
+- 市场概率。
+- 模型概率。
+- 分歧程度。
+- AI 一句话总结。
+- 推荐动作：看好 / 谨慎 / 观望。
 
-#### Match Strategy Card
+这个页面是产品的入口。
 
-Each match should show:
+### 6.2 比赛策略卡
 
-- Kickoff time.
-- Watch importance.
-- Market probability.
-- Model probability.
-- AI forecast.
-- Risk flags.
-- Three strategy options.
+每场比赛给出 3-4 种策略：
 
-Example:
-
-| Strategy | Meaning | Example |
+| 策略 | 说明 | 例子 |
 | --- | --- | --- |
-| 稳健策略 | Lower variance, fewer shots | France not to lose / France direction |
-| 价值策略 | Model says market underprices one side | France win if model edge is positive |
-| 杠铃策略 | Mostly safe or skip, small exposure to high upside | Small simulated pick on 2-1 or over 2.5 |
-| 观望策略 | No clear edge | Skip and only watch |
+| 稳健策略 | 少出手，低波动 | 法国不败 / 大方向看法国 |
+| 价值策略 | 模型概率高于市场概率 | 法国胜，Edge +5pt |
+| 杠铃策略 | 大部分观望，小部分搏高赔率 | 小注 2-1 / 1-0 |
+| 观望策略 | 没有明显优势 | 只看球，不模拟押注 |
 
-#### Simulated Strategy Log
+### 6.3 模拟采纳
 
-The user can record:
+按钮可以是：
 
-- I adopted this strategy.
-- I watched only.
-- I went against the AI.
-- I used it elsewhere.
+- 采纳策略。
+- 加入观察。
+- 我反向。
+- 只看球。
 
-This should not ask for real money amount in the MVP. Use "units" instead:
+这会写入用户记录。
 
-- 0.5 unit.
-- 1 unit.
-- 2 units.
+### 6.4 我的策略记录
 
-#### AI Review
+把现在的“我的预测”升级为“我的策略记录”：
 
-After settlement, AI should explain:
+- 待结算。
+- 已命中。
+- 未命中。
+- 已观望。
+- 连续命中。
+- 不同策略类型表现。
 
-- Did the strategy hit?
-- Was the reasoning good?
-- Was the miss caused by model error, team news, random match events, or market overreaction?
-- What should the user learn?
+### 6.5 AI 赛后复盘
 
-Example:
+赛后给用户一段复盘：
 
-> 这场策略没中，但不是坏决策。模型正确识别了法国的控球优势，错在低估了早段红牌对节奏的影响。你的选择属于价值派，不建议因为单场结果改变长期策略。
+- 策略结果。
+- 关键原因。
+- 模型是否被验证。
+- 用户画像变化。
 
-#### User Profile
+MVP 阶段可以先半自动，不需要一开始就完全自动。
 
-The user's long-term profile should include:
+### 6.6 分享卡
 
-- Strategy personality: 稳健派 / 价值派 / 杠铃派 / 反共识派 / 情绪球迷.
-- Hit rate by strategy type.
-- Brier score or calibration score for probability predictions.
-- Favorite teams and leagues.
-- Best time to send reminders.
-- AI memory summary.
+生成适合发群/朋友圈/小红书的结果卡：
 
-### 7.3 AI Mode
+> 昨晚 JMWL 策略 5 中 3。  
+> 我采纳 2 条，命中 1 条。  
+> 本周我是稳健派。
 
-AI should not be framed as "a magic predictor." AI should be framed as a strategy mentor.
+分享卡对传播和简历项目都很重要。
 
-#### AI Responsibilities
+## 7. AI 到底在哪里
 
-1. Summarize match context.
-2. Explain probability differences.
-3. Generate strategy cards.
-4. Warn when no edge exists.
-5. Review after the match.
-6. Update user memory.
-7. Help users talk about football.
+AI 不应该只是“预测谁赢”。那样太薄，也容易显得玄学。
 
-#### AI Should Not
+AI 的角色应该是 **策略导师 + 看球搭子**。
 
-1. Promise profit.
-2. Push real-money betting.
-3. Claim certainty.
-4. Hide uncertainty.
-5. Pretend Polymarket is always correct.
+### 7.1 AI 做赛前总结
 
-### 7.4 Strategy Models
+AI 把复杂信息变成人话：
 
-#### Conservative Strategy
+> 这场值得看，不是因为两队都强，而是市场和模型分歧大。
 
-Goal: avoid noisy matches.
+### 7.2 AI 做策略解释
 
-Rules:
+AI 解释为什么推荐：
 
-- Only recommend when model and market agree on direction.
-- Avoid low-confidence matches.
-- Prefer winner/draw direction, double chance, or watch-only.
+> 市场给德国太高，JMWL 模型认为法国反击效率被低估，所以法国方向有价值。
 
-#### Value Strategy
+### 7.3 AI 做劝退
 
-Goal: find positive expected value.
+这点很重要。AI 不应该每场都推荐。
 
-Rules:
+它要会说：
 
-- Compare model probability with market probability.
-- Flag only if edge exceeds a threshold, such as 3-5 percentage points.
-- Use smaller confidence if market liquidity is low.
+> 这场模型和市场基本一致，没有明显优势，建议观望。
 
-Formula reference:
+### 7.4 AI 做赛后复盘
+
+AI 解释结果，而不是只说“中/没中”。
+
+例如：
+
+> 这次错在低估主力轮换，不是概率模型整体失效。
+
+### 7.5 AI 做长期记忆
+
+AI 记住用户：
+
+- 喜欢哪支队。
+- 喜欢稳健还是搏冷。
+- 哪类策略命中率高。
+- 哪类策略总是冲动。
+
+这才是长期留存点。
+
+## 8. 策略体系
+
+### 8.1 稳健策略
+
+目标：减少噪音，少出手。
+
+适合：
+
+- 普通用户。
+- 看球前想有底。
+- 不想玩太刺激的人。
+
+规则：
+
+- 模型和市场方向一致才推荐。
+- 低信心比赛直接观望。
+- 优先推荐不败、大方向、强弱明显局。
+
+### 8.2 价值策略
+
+目标：找市场低估。
+
+核心逻辑：
 
 ```text
-Expected Value = (Decimal Odds * Estimated Probability) - 1
+如果 JMWL 估计概率 > 市场隐含概率，就可能有价值。
 ```
 
-This is the core "why" behind the product: JMWL should not recommend a match because a team is famous. It should recommend a strategy only when the estimated probability and the market price create a clear reason to act, watch, or skip.
+例如：
 
-#### Kelly Strategy
+市场认为法国胜率 41%，JMWL 模型认为 46%，那法国方向就是 +5pt Edge。
 
-Goal: size simulated units based on edge.
+但注意：有 Edge 不等于一定会赢，只代表长期看可能更值得。
 
-Kelly Criterion is used for bet sizing when probability and odds are known. It is powerful but sensitive to probability error, so the product should use fractional Kelly for simulations. Source: [Investopedia - Kelly Criterion](https://www.investopedia.com/terms/k/kellycriterion.asp).
+### 8.3 Kelly 策略
 
-Simple formula:
+目标：根据胜率和赔率决定模拟单位。
+
+Kelly Criterion 可以用来计算理论仓位，但它对概率误差很敏感，所以产品里只能用保守版本。
+
+产品规则：
+
+- 不展示“真钱下注金额”。
+- 只展示“模拟单位”。
+- 不用满 Kelly。
+- 使用 1/4 Kelly 或更低。
+
+### 8.4 杠铃策略
+
+目标：大部分比赛保守或观望，少量比赛搏高赔率。
+
+适合看球娱乐场景。
+
+产品表达：
+
+> 这场主策略观望，但如果你想搏冷，可以小单位尝试 2-1。
+
+它的重点不是鼓励乱冲，而是把风险控制在少数策略里。
+
+### 8.5 反共识策略
+
+目标：识别市场过热。
+
+例如：
+
+- 热门球队被公众买爆。
+- 市场价格涨得很快。
+- 但模型和基本面没有同步支持。
+
+AI 可以提示：
+
+> 这场市场情绪偏热，不建议追高。
+
+### 8.6 垄断优势策略
+
+这个适合长期赛事和五大联赛。
+
+它看的是结构性优势：
+
+- 阵容深度。
+- 教练稳定。
+- 赛程密度。
+- 伤病韧性。
+- 主客场旅行压力。
+- 强强对话经验。
+- 市场叙事溢价。
+
+例如：
+
+> 法国的优势不只是单场状态，而是阵容深度在密集赛程里更稳定。市场已经部分定价，但没有完全定价轮换能力。
+
+### 8.7 讲球策略
+
+这个是传播玩法。
+
+AI 帮用户把判断讲出来：
+
+- 这场为什么重要。
+- 市场怎么看。
+- JMWL 哪里不同意。
+- 关键变量是什么。
+- 一句话怎么发群。
+
+例如：
+
+> 这场好看的点不是谁更强，而是市场过度相信德国控球。JMWL 认为法国反击效率被低估，所以更像一场价值盘。
+
+这会让用户有动力“讲球”或“吹球”。
+
+## 9. 长期怎么从世界杯迁移到五大联赛
+
+世界杯只是冷启动场景。
+
+后续日常看球可以这样扩展：
+
+### 第一阶段：世界杯
+
+目标：验证用户是否愿意使用策略卡。
+
+关注指标：
+
+- 有多少人看今日策略页。
+- 有多少人点击采纳策略。
+- 有多少人赛后回来看复盘。
+- 有多少人分享战绩。
+
+### 第二阶段：重点赛事
+
+世界杯结束后，不要立刻覆盖所有比赛。
+
+先做：
+
+- 欧冠。
+- 英超强强对话。
+- 国家队比赛。
+- 五大联赛焦点战。
+
+产品每天不需要推 50 场，只需要精选 3-5 场。
+
+### 第三阶段：用户关注队
+
+让用户选择关注：
+
+- 球队。
+- 联赛。
+- 球星。
+- 策略类型。
+
+例如：
+
+> 你关注的阿森纳今晚 23:30 开赛。  
+> 首发公布后，JMWL 会更新策略天气。
+
+### 第四阶段：移动端
+
+移动端不是把网页塞进手机。
+
+移动端核心是：
+
+- 今日重要比赛。
+- 开赛前提醒。
+- 首发后策略变化。
+- 赛后复盘。
+- 我的策略战绩。
+
+移动端首页应该非常简单：
 
 ```text
-f* = p - (1 - p) / b
+今晚值得看：3 场
+你关注的球队：1 场
+策略变化：1 条
+昨日复盘：JMWL 5 中 3，你采纳 2 中 1
 ```
 
-Where:
+## 10. 一个月能不能跑起来
 
-- `p` = estimated win probability.
-- `b` = net odds received on a win.
-- `f*` = fraction of bankroll.
+结论：**可以跑起来，但必须控制范围。**
 
-Product rule:
+一个月内不要做完整移动 App，不要接全量五大联赛，不要做完整自动结算，不要做复杂社区。
 
-- Never show full Kelly as a recommendation.
-- Use 1/4 Kelly or lower.
-- Show "unit" language, not real currency.
+一个月内可以做出一个能展示、能体验、能拿用户数据、能写进简历的 MVP。
 
-#### Barbell Strategy
+### 10.1 一个月可交付版本
 
-Goal: keep most actions safe or skipped, while allowing small, high-upside simulations.
+可以做到：
 
-Product behavior:
+- 一个新的中文产品定位。
+- 一个 `/strategy` 今日策略页。
+- 每场比赛三策略卡。
+- 用户采纳策略。
+- 我的策略记录。
+- 简单结算状态。
+- AI 复盘文案。
+- 分享卡雏形。
+- 基础埋点或日志统计。
 
-- 80-90% of matches: watch-only or conservative.
-- 10-20%: small simulated long-shot strategy such as exact score, high total goals, or upset.
-- AI explains this as entertainment plus controlled risk.
+### 10.2 一个月不建议做
 
-#### Anti-Consensus Strategy
+暂时不要做：
 
-Goal: detect public overreaction.
+- 原生 iOS / Android App。
+- 全量五大联赛数据。
+- 真实下注账户接入。
+- 完整社区。
+- 自动抓取所有外部盘口。
+- 完全自动的复杂赛后归因。
 
-Rules:
+这些会把项目拖死。
 
-- Market price moved sharply without matching model or team-news reason.
-- Public favorite is overheated.
-- AI may recommend "fade hype" or "watch only."
+### 10.3 推荐开发节奏
 
-#### Market Power / Moat Strategy
+#### 第 1 周：产品重构
 
-Goal: identify teams whose public price may not fully reflect structural strength.
+目标：让产品从“预测看板”变成“看球策略工具”。
 
-This is useful for long tournaments and league seasons. The model should track durable advantages:
+任务：
 
-- Squad depth.
-- Coach stability.
-- Fixture congestion.
-- Injury resilience.
-- Home/away travel burden.
-- Big-match experience.
-- Public narrative premium or discount.
+- 新增 `/strategy` 页面。
+- 定义比赛重要度算法。
+- 定义三类策略卡。
+- 改文案：少说下注，多说策略、模拟、复盘。
 
-AI turns these factors into a plain-language view:
+#### 第 2 周：用户闭环
 
-> 这不是单场状态问题，而是法国的阵容深度在连续赛程里更有垄断式优势。市场已经部分定价，但没有完全定价轮换能力。
+目标：让用户能采纳策略。
 
-This should be treated as a qualitative layer above the numerical model, not as a replacement for probability.
+任务：
 
-#### Talk-Football Strategy
+- 扩展 `user_predictions` 或新增 `user_strategies`。
+- 支持策略类型：稳健、价值、杠铃、观望。
+- 保存用户采纳记录。
+- 把“我的预测”改成“我的策略记录”。
 
-Goal: help users explain a match to others.
+#### 第 3 周：赛后反馈
 
-This is the "吹球" layer. AI should generate concise talking points:
+目标：让用户回来复盘。
 
-- Why this match matters.
-- What the market believes.
-- What JMWL disagrees with.
-- What would change the strategy.
-- One sentence users can share in a group chat.
+任务：
 
-Example:
+- 支持手动/半自动结算。
+- 展示命中、未命中、待结算。
+- 生成 AI 复盘文案。
+- 统计不同策略类型表现。
 
-> 这场好看的点不是谁更强，而是市场过度相信德国的控球优势。JMWL 认为法国反击效率被低估，所以更像一场价值盘。
+#### 第 4 周：运营验证
 
+目标：拿到用户数据。
 
-### 7.5 Evaluation System
+任务：
 
-The product needs to judge probabilities, not just binary wins.
+- 做分享卡。
+- 加基础埋点。
+- 找 10-30 个朋友/球迷试用。
+- 每天发“今日看球天气”。
+- 收集反馈。
+- 整理简历项目复盘。
 
-Recommended metrics:
+## 11. 简历项目怎么写
 
-- Hit rate: easy for users to understand.
-- Simulated ROI by units: useful but should not dominate.
-- Brier score: measures probability forecast quality, lower is better. Source: [Brier Score docs](https://scores.readthedocs.io/en/1.3.0/tutorials/Brier_Score.html).
-- Calibration: when the model says 60%, did it happen about 60% of the time?
-- Strategy-specific score: conservative, value, barbell, anti-consensus.
+可以写成：
 
-### 7.6 Compliance Position
+> 设计并开发 AI 看球策略助手 MVP，将世界杯赛程、Polymarket 市场概率、模型胜率和 AI 分析整合为“赛前策略天气”。通过模拟采纳、赛后结算和 AI 复盘，验证用户在看球前获取决策参考的需求，并沉淀用户策略画像。
 
-JMWL should stay on the strategy-tool side.
+如果强调产品能力：
 
-Rules:
+> 从一次性胜率查询场景出发，重构为可长期运营的 AI 看球陪伴产品。设计“赛前分析 - 模拟策略 - 赛后复盘 - 用户画像”闭环，规避真实押注合规风险，并规划从世界杯迁移到五大联赛的长期路径。
 
-1. Do not accept deposits.
-2. Do not execute bets.
-3. Do not connect sportsbook accounts in MVP.
-4. Do not promise profit.
-5. Do not use "guaranteed" or "must win" language.
-6. Use simulation units.
-7. Add clear disclaimer: educational and entertainment analysis only.
+如果强调数据：
 
-This protects the product while keeping the most useful loop: decision, record, feedback, learning.
+> 通过策略卡浏览率、采纳率、赛后回访率、分享率和用户反馈，验证 AI 体育策略工具的用户价值。
 
-## 8. Release
+## 12. 成功指标
 
-### MVP - World Cup Strategy Weather
+MVP 阶段不要追求 DAU 很高。
 
-Timeframe: 1-2 weeks.
+更应该看这些：
 
-Features:
+- 策略卡浏览率。
+- 采纳策略率。
+- 赛后复盘查看率。
+- 次日/下一场比赛回访率。
+- 分享卡生成率。
+- 用户是否主动说“看球前会打开看一下”。
 
-1. `/strategy` page: today's important matches.
-2. Match importance scoring.
-3. Strategy card with conservative/value/barbell/watch-only options.
-4. Simulated strategy adoption.
-5. My strategy log.
-6. Manual or semi-automatic settlement.
-7. AI post-match review template.
-8. Share card for strategy result.
+一个简历项目能拿到这些就很有说服力：
 
-Primary validation:
+- 20-50 个真实用户访问。
+- 10 个以上用户采纳策略。
+- 5 个以上用户赛后回来看复盘。
+- 3 个以上用户给出文字反馈。
+- 能展示一条完整闭环：赛前策略 -> 用户采纳 -> 赛后复盘 -> 用户画像变化。
 
-- Do users click "采纳策略"?
-- Do they come back after the match?
-- Do they understand the AI explanation?
-- Do they share the result?
+## 13. 最大风险
 
-### V1 - Personal Watch Companion
+### 风险一：用户只看一次就走
 
-Timeframe: 3-5 weeks after MVP.
+解决：
 
-Features:
+- 做关注球队。
+- 做赛后复盘。
+- 做个人画像。
+- 做开赛提醒。
 
-1. Favorite teams and competitions.
-2. Match reminders.
-3. User strategy profile.
-4. Weekly recap.
-5. AI chat scoped to current match and user history.
-6. Better settlement and scoring.
+### 风险二：AI 显得很玄学
 
-### V2 - Five Leagues And Mobile
+解决：
 
-Timeframe: after the World Cup proof.
+- AI 不直接装神预测。
+- AI 解释概率、风险和不确定性。
+- AI 要会劝退。
+- AI 要赛后承认错误。
 
-Features:
+### 风险三：太像博彩工具
 
-1. Premier League, Champions League, La Liga, Serie A, Bundesliga, Ligue 1.
-2. Mobile-first UI.
-3. Push notifications.
-4. Calendar sync.
-5. Lineup-based strategy updates.
-6. Public strategy leaderboard for simulated performance.
+解决：
 
-### V3 - Community And Creator Mode
+- 全部用模拟单位。
+- 不接真钱。
+- 不说盈利。
+- 强调看球、学习、复盘、娱乐。
 
-Features:
+### 风险四：世界杯结束后没东西做
 
-1. Shareable "talk football" cards.
-2. Creator strategy portfolios.
-3. Group watch rooms.
-4. Follow strategy personalities.
-5. Public model track record.
+解决：
 
-## Slogan Options
+- 从世界杯迁移到焦点赛事。
+- 不做全量赛程，做每日精选。
+- 让用户关注球队。
+- 每周做策略周报。
 
-Recommended:
+## 14. 最终判断
 
-> 赛前有底，赛后有谱。
+这个项目一个月可以跑起来。
 
-Alternative options:
+但正确目标不是“做一个完整体育平台”，而是做出一个明确的 MVP：
 
-1. 像查天气一样看比赛。
-2. 你的 AI 看球搭子。
-3. 开赛前，看一眼胜率天气。
-4. 不替你下注，只帮你看懂比赛。
-5. 每场球，都有一张策略天气图。
-6. 看球前的最后一眼。
-7. 让每场比赛都有依据。
-8. 先看策略，再看比赛。
-9. 用市场概率，讲清比赛故事。
-10. 从赛前预测到赛后复盘。
+> 用户看球前打开 JMWL，看到今日重要比赛和策略天气，采纳一条模拟策略，赛后回来复盘，并慢慢形成自己的看球画像。
 
-Best positioning bundle:
+只要这个闭环跑通，即使世界杯过去，它也能迁移到五大联赛和欧冠。
 
-```text
-JMWL Sports
-赛前有底，赛后有谱。
-你的 AI 看球搭子：像查天气一样看比赛。
-```
+长期产品不是“世界杯预测站”，而是：
 
-## Resume Project Angle
+> JMWL Sports：一个移动端优先的 AI 看球搭子。
 
-This project can be written as:
-
-> Designed and built an AI sports watch companion MVP that converts football fixtures, market probabilities, model forecasts, and user behavior into pre-match strategy cards and post-match feedback loops. Repositioned a World Cup prediction dashboard into a mobile-first strategy weather product, with simulated strategy adoption, user risk profiling, and AI review as the core retention loop.
-
-Measurable project story:
-
-1. Problem: fixture and odds data are informative but not habit-forming.
-2. Insight: users need confidence before watching, not another betting platform.
-3. Solution: strategy weather, simulated adoption, post-match AI review, user profile.
-4. Validation: adoption rate, return rate, settled strategy view rate, share rate.
-5. Expansion: World Cup first, then five major leagues.
-
-## Open Assumptions To Validate
-
-1. Casual fans will click "采纳策略" even without real-money betting.
-2. Users understand "unit" based simulated tracking.
-3. AI review creates more retention than prediction alone.
-4. Market probability from Polymarket is trusted enough by target users.
-5. Users want "important match curation" more than a complete fixture list.
-6. Exact-score strategy is fun enough for barbell mode even when market data is missing.
-7. Mobile push around lineup and probability changes is valuable enough for daily use.
