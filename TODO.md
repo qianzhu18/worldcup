@@ -1,9 +1,21 @@
 # World Cup Project Todo
 
-Version: 2026-06-10.1
-Updated: 2026-06-09
+Version: 2026-06-14.1
+Updated: 2026-06-14
 
-## Current Task: Vercel Deployment And Launch Readiness
+## Current Task: Docker One-Command Deployment
+
+- [x] Confirm project root, git status, and existing deployment files.
+- [x] Add production Dockerfile for the Next.js standalone build.
+- [x] Add Docker Compose service with build/runtime environment wiring.
+- [x] Add Docker env template and ignore local `.env` secrets.
+- [x] Add healthcheck route for container readiness.
+- [x] Document one-command Docker deployment and update commands.
+- [x] Validate local `pnpm build`.
+- [x] Validate `docker compose` build, startup, healthcheck, and homepage response.
+- [x] Commit and push Docker deployment changes to `qianzhu18/main`.
+
+## Previous Task: Vercel Deployment And Launch Readiness
 
 - [x] Confirm project root, git status, and existing deployment files.
 - [x] Validate local production build.

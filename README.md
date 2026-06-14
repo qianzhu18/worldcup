@@ -73,6 +73,36 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
 
 ---
 
+## Docker 一键部署
+
+适合 macOS / Windows / Linux 协作者和服务器，无需本机安装 Node.js 或 pnpm。
+
+```bash
+# 1. 首次部署：准备环境变量
+cp .env.docker.example .env
+# 编辑 .env，填入 AI_API_KEY、NEXT_PUBLIC_SUPABASE_URL、NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+# 2. 一键构建并后台启动
+docker compose up -d --build
+
+# 3. 查看状态 / 日志
+docker compose ps
+docker compose logs -f worldcup
+```
+
+部署完成后访问：`http://localhost:3000`。如需改端口，修改 `.env` 里的 `APP_PORT`。
+
+更新线上代码时，在服务器执行：
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+> `NEXT_PUBLIC_SUPABASE_*` 会在 Next.js 构建时写入客户端 bundle；修改这些变量后必须重新 `docker compose up -d --build`。`.env` 和 `.env.local` 都不会进入镜像或 Git。
+
+---
+
 ## 项目结构
 
 ```
