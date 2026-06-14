@@ -178,3 +178,110 @@ export async function safeMatch(h: string, a: string): Promise<AiMatch | null> {
     return null;
   }
 }
+
+// ---- Multi-model "AI Battle" predictions ----
+export type AiPersona = {
+  id: string;
+  model: string;
+  displayName: string;
+  emoji: string;
+  systemPrompt: string;
+  color: string;
+};
+
+export const AI_PERSONAS: AiPersona[] = [
+  {
+    id: "minimax",
+    model: "minimax-m3:free",
+    displayName: "MiniMax",
+    emoji: "📊",
+    color: "emerald",
+    systemPrompt:
+      "你是「数据派分析师 MiniMax」，风格理性严谨，极度依赖 FIFA 排名、ELO 评分、历史交锋数据和统计模型。" +
+      "你的口头禅是「数据不会说谎」。偶尔会嘲讽其他 AI 不看数据。" +
+      "为指定对阵做独立的胜平负概率评估，只依据客观数据。",
+  },
+  {
+    id: "deepseek",
+    model: "deepseek-v4-pro",
+    displayName: "DeepSeek",
+    emoji: "♟️",
+    color: "blue",
+    systemPrompt:
+      "你是「战术大师 DeepSeek」，风格深谋远虑，擅长分析阵型克制、球员状态、教练战术和近期表现。" +
+      "你的口头禅是「战术决定一切」。喜欢指出数据派的盲点。" +
+      "为指定对阵做独立的胜平负概率评估，侧重战术层面分析。",
+  },
+  {
+    id: "qwen",
+    model: "qwen3.7-max",
+    displayName: "Qwen",
+    emoji: "🔮",
+    color: "purple",
+    systemPrompt:
+      "你是「直觉型预言家 Qwen」，风格感性直觉，相信大赛气场、球队精神面貌和「足球是圆的」哲学。" +
+      "你的口头禅是「足球不是数学题」。喜欢挑战冷门，相信奇迹。" +
+      "为指定对阵做独立的胜平负概率评估，侧重心理和气场因素。",
+  },
+];
+
+export type AiBattleResult = {
+  personaId: string;
+  displayName: string;
+  emoji: string;
+  color: string;
+  home: number;
+  draw: number;
+  away: number;
+  confidence: number;
+  factors: string[];
+  summary: string;
+};
+
+export async function aiMatchPrediction(
+  homeCode: string,
+  awayCode: string,
+  persona: AiPersona,
+): Promise<AiBattleResult> {
+  const h = teamByCode(homeCode);
+  const a = teamByCode(awayCode);
+  if (!h || !a) throw new Error("unknown teams");
+
+  const cacheKey = `battle:${persona.id}:${homeCode}:${awayCode}`;
+  return cached(cacheKey, async () => {
+    const sys: Msg = { role: "system", content: persona.systemPrompt };
+    const usr: Msg = {
+      role: "user",
+      content:
+        `对阵：${h.name}(主, FIFA#${h.fifaRank}, ELO ${h.elo}) vs ${a.name}(客, FIFA#${a.fifaRank}, ELO ${a.elo})，2026 世界杯，中立球场。\n` +
+        `只返回 JSON：{"home": 主胜概率%, "draw": 平局概率%, "away": 客胜概率%, "confidence": 0到1, "factors": [三条简短中文理由], "summary": "一句话中文总结（带点你的人设风格）"}。三个概率加和为100。`,
+    };
+    const raw = await callModel(cfg().BASE, persona.model, cfg().KEY || "", [sys, usr], 900);
+    const o = extractJSON<any>(raw);
+    const sum = (Number(o.home) + Number(o.draw) + Number(o.away)) || 100;
+    return {
+      personaId: persona.id,
+      displayName: persona.displayName,
+      emoji: persona.emoji,
+      color: persona.color,
+      home: Number(o.home) / sum,
+      draw: Number(o.draw) / sum,
+      away: Number(o.away) / sum,
+      confidence: Math.max(0, Math.min(1, Number(o.confidence) || 0.5)),
+      factors: Array.isArray(o.factors) ? o.factors.slice(0, 3) : [],
+      summary: String(o.summary || ""),
+    };
+  });
+}
+
+export async function safeBattlePrediction(
+  homeCode: string,
+  awayCode: string,
+): Promise<AiBattleResult[]> {
+  const results = await Promise.allSettled(
+    AI_PERSONAS.map((p) => aiMatchPrediction(homeCode, awayCode, p)),
+  );
+  return results
+    .filter((r): r is PromiseFulfilledResult<AiBattleResult> => r.status === "fulfilled")
+    .map((r) => r.value);
+}

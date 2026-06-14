@@ -9,6 +9,7 @@ const links = [
   { href: "/timeline", label: "赛程时间线" },
   { href: "/teams", label: "球队" },
   { href: "/players", label: "球员" },
+  { href: "/sports-guess", label: "体育竞猜" },
 ];
 
 export function Nav() {
