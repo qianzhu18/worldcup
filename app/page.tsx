@@ -5,6 +5,7 @@ import { modelChampionFor, championProbabilities } from "@/lib/model";
 import { MATCHES, TEAMS } from "@/lib/worldcup";
 import { safeChampion } from "@/lib/ai";
 import { ScannerConsole } from "@/components/ScannerConsole";
+import { QuickNav } from "@/components/QuickNav";
 import { formatSignedPct, recommendYesNo } from "@/lib/trade-recommendation";
 import Link from "next/link";
 
@@ -55,6 +56,8 @@ export default async function Home() {
         openingVenue={`${openingMatch.city} · ${openingMatch.venue}`}
       />
 
+      <QuickNav />
+
       {/* ---------- WINNER MARKET FOCUS ---------- */}
       {winner && (
         <section id="winner-market">
@@ -85,7 +88,7 @@ export default async function Home() {
             </div>
 
             <div className="card overflow-hidden">
-              <div className="grid grid-cols-[1.1fr_0.62fr_0.62fr_0.78fr_0.78fr] gap-2 border-b border-white/10 px-4 py-2.5 text-xs uppercase tracking-wide text-slate-400">
+              <div className="hidden grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_0.7fr] gap-2 border-b border-white/10 px-4 py-2.5 text-xs uppercase tracking-wide text-slate-400 md:grid">
                 <span>球队</span>
                 <span className="text-right">隐含概率</span>
                 <span className="text-right">AI胜率</span>
@@ -102,16 +105,20 @@ export default async function Home() {
                     href={o.url ?? winner.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="grid grid-cols-[1.1fr_0.62fr_0.62fr_0.78fr_0.78fr] items-center gap-2 border-b border-white/5 px-4 py-2.5 text-sm transition hover:bg-white/5 last:border-0"
+                    className="grid grid-cols-2 items-center gap-2 border-b border-white/5 px-4 py-2.5 text-sm transition hover:bg-white/5 last:border-0 md:grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_0.7fr]"
                   >
-                    <span className="flex items-center gap-2 font-medium text-white">
+                    <span className="col-span-2 flex items-center gap-2 font-medium text-white md:col-span-1">
                       {code && <Flag code={code} className="h-4 w-6" />}
                       {o.label}
                     </span>
                     <span className="text-right font-bold tabular-nums text-emerald-300">
+                      <span className="mr-1 text-[10px] uppercase text-slate-500 md:hidden">市场</span>
                       {(o.price * 100).toFixed(2)}%
                     </span>
-                    <span className="text-right tabular-nums text-slate-300">{model > 0 ? `${(model * 100).toFixed(1)}%` : "--"}</span>
+                    <span className="text-right tabular-nums text-slate-300">
+                      <span className="mr-1 text-[10px] uppercase text-slate-500 md:hidden">AI</span>
+                      {model > 0 ? `${(model * 100).toFixed(1)}%` : "--"}
+                    </span>
                     <span className="text-right">{rec ? <TradeBadge label={rec.label} tone={rec.tone} /> : "--"}</span>
                     <span className={`text-right tabular-nums ${rec?.tone === "yes" ? "text-emerald-300" : rec?.tone === "no" ? "text-orange-300" : "text-slate-400"}`}>
                       {rec ? formatSignedPct(rec.edge) : "--"}

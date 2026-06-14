@@ -269,7 +269,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
                         <img
                           src={playerPhoto(pl)}
                           alt={pl.name}
-                          className="h-10 w-10 rounded-full bg-pitch-700 object-cover"
+                          className="h-10 w-10 rounded-full bg-pitch-700 object-cover object-top"
                         />
                         <div className="flex-1">
                           <div className="text-sm font-medium text-white">{pl.zh}</div>

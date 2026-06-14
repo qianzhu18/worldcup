@@ -51,28 +51,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Ticker items={tickerItems} />
           <main className="mx-auto max-w-7xl px-4 pb-24 pt-6">{children}</main>
           <footer className="mx-auto max-w-7xl px-4 pb-10">
-            <div className="overflow-hidden rounded-2xl border border-emerald-400/20 bg-[#07121b]/86 shadow-[0_18px_70px_rgba(0,0,0,0.36)]">
-              <div className="relative px-6 py-7 md:flex md:items-center md:justify-between md:gap-8 md:px-8">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(39,245,138,0.16),transparent_38%),radial-gradient(circle_at_88%_45%,rgba(34,211,238,0.12),transparent_34%)]" />
+            <div className="overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#07121b]/86">
+              <div className="relative grid gap-5 px-6 py-6 md:grid-cols-[1fr_auto] md:items-center md:gap-8 md:px-8">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,rgba(39,245,138,0.10),transparent_38%),radial-gradient(circle_at_88%_45%,rgba(34,211,238,0.08),transparent_34%)]" />
                 <div className="relative">
                   <div className="text-[10px] font-black uppercase tracking-[0.32em] text-emerald-300">
                     Contact
                   </div>
-                  <div className="mt-2 text-2xl font-black text-white md:text-3xl">
+                  <div className="mt-1.5 text-xl font-black text-white md:text-2xl">
                     {"联系我，聊世界杯预测市场"}
                   </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+                  <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-400">
                     {"有想法、有问题、想合作？扫码加微信随时聊。"}
                   </p>
                 </div>
 
-                <div className="relative mt-5 flex flex-col items-center gap-3 md:mt-0 md:items-end">
+                <div className="relative flex items-center gap-4 md:flex-col md:items-center">
                   <img
                     src="/wechat-qrcode.jpg"
                     alt="微信联系"
-                    className="h-32 w-32 rounded-xl border border-emerald-400/30 object-cover shadow-lg"
+                    className="h-24 w-24 rounded-xl border border-emerald-400/30 object-cover shadow-lg md:h-28 md:w-28"
                   />
-                  <span className="text-xs font-semibold text-emerald-300">{"扫码添加微信"}</span>
+                  <span className="text-xs font-semibold text-emerald-300 md:mt-1">{"扫码添加微信"}</span>
                 </div>
               </div>
               <div className="border-t border-white/10 px-6 py-3 text-center text-[11px] text-slate-500 md:px-8">

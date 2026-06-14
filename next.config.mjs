@@ -13,6 +13,8 @@ const nextConfig = {
       { protocol: "https", hostname: "flagcdn.com" },
       { protocol: "https", hostname: "polymarket-upload.s3.us-east-2.amazonaws.com" },
       { protocol: "https", hostname: "api.dicebear.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "img.a.transfermarkt.technology" },
     ],
   },
 };

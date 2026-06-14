@@ -64,7 +64,7 @@ export default async function TeamPage({ params }: { params: Promise<{ code: str
               {players.map((p) => (
                 <Link key={p.id} href={`/player/${p.id}`} className="card flex items-center gap-3 p-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={playerPhoto(p)} alt={p.name} className="h-14 w-14 rounded-full bg-pitch-700 object-cover" />
+                  <img src={playerPhoto(p)} alt={p.name} className="h-14 w-14 rounded-full bg-pitch-700 object-cover object-top" />
                   <div className="flex-1">
                     <div className="font-semibold text-white">{p.zh}</div>
                     <div className="text-xs text-slate-400">{p.position} · #{p.number} · {p.club}</div>

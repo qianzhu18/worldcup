@@ -24,7 +24,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         <div className="relative flex flex-wrap items-center gap-6">
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={playerPhoto(p)} alt={p.name} className="h-32 w-32 rounded-3xl bg-pitch-700 object-cover ring-4 ring-gold-400/30 shadow-glow" />
+            <img src={playerPhoto(p)} alt={p.name} className="h-36 w-36 rounded-full bg-pitch-700 object-cover object-top ring-4 ring-gold-400/30 shadow-glow" />
             <span className="absolute -bottom-2 -right-2 grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-500 heading text-xl text-pitch-900 shadow-glow">
               {p.rating.toFixed(1)}
             </span>
