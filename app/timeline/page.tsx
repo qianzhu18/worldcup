@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { MATCHES, TEAMS, teamByCode } from "@/lib/worldcup";
 import { groupStageAnalysis } from "@/lib/model";
 import { getWorldCupMarkets } from "@/lib/polymarket";
@@ -5,7 +6,14 @@ import { Flag } from "@/components/ui";
 import { Countdown } from "@/components/Countdown";
 import Link from "next/link";
 
-export default async function TimelinePage() {
+const DAYS_PER_PAGE = 5;
+
+type TimelineSearchParams = {
+  page?: string | string[];
+};
+
+export default async function TimelinePage({ searchParams }: { searchParams?: Promise<TimelineSearchParams> }) {
+  const params = (await searchParams) ?? {};
   const markets = await getWorldCupMarkets();
   const winner = markets.find((market) => market.slug?.includes("winner")) ?? markets[0];
   const codeByName = new Map(TEAMS.map((team) => [team.name, team.code]));
@@ -27,12 +35,21 @@ export default async function TimelinePage() {
   }
 
   const days = [...byDay.entries()];
+  const totalPages = Math.max(1, Math.ceil(days.length / DAYS_PER_PAGE));
+  const currentPage = clampPage(readParam(params.page), totalPages);
+  const dayStart = (currentPage - 1) * DAYS_PER_PAGE;
+  const visibleDays = days.slice(dayStart, dayStart + DAYS_PER_PAGE);
+  const visibleStartDay = days.length ? dayStart + 1 : 0;
+  const visibleEndDay = dayStart + visibleDays.length;
+  const visibleMatchCount = visibleDays.reduce((sum, [, matches]) => sum + matches.length, 0);
   const final = MATCHES.find((m) => m.stage === "Final");
+  const finalPage = final ? pageForDay(final.kickoff.slice(0, 10), days) : undefined;
+  const dayWindows = pageWindows(days);
   const totalEdges = groupMatches.map((m) => {
     const p = groupStageAnalysis(m.home!, m.away!, marketByCode).adjusted;
     return Math.max(p.home, p.draw, p.away) - Math.min(p.home, p.draw, p.away);
   });
-  const maxEdge = Math.max(...totalEdges);
+  const maxEdge = totalEdges.length ? Math.max(...totalEdges) : 0;
 
   return (
     <div className="space-y-6">
@@ -44,8 +61,8 @@ export default async function TimelinePage() {
             <h1 className="mt-2 text-3xl font-black tracking-normal text-white md:text-4xl">
               赛程时间线 <span className="zen-text">AI Queue</span>
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              按比赛日扫描小组赛，结合倒计时、场馆、胜平负概率和模型分歧，快速定位最值得关注的赛程窗口。
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              按 5 个比赛日一页组织赛程窗口，结合倒计时、场馆、胜平负概率和模型分歧，快速定位最值得关注的赛程节点。
             </p>
             <div className="mt-4 max-w-3xl rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-3 text-xs leading-relaxed text-slate-300">
               <span className="font-bold text-emerald-300">重点说明：</span>
@@ -54,42 +71,77 @@ export default async function TimelinePage() {
               不是单场胜平负盘口。
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:w-[420px]">
-            <ConsoleStat label="比赛日" value={String(days.length)} />
-            <ConsoleStat label="总场次" value={String(scheduleMatches.length)} />
+          <div className="grid grid-cols-3 gap-2 sm:w-[460px]">
+            <ConsoleStat label="窗口" value={`D${pad(visibleStartDay)}-D${pad(visibleEndDay)}`} />
+            <ConsoleStat label="本窗场次" value={String(visibleMatchCount)} />
             <ConsoleStat label="最大分歧" value={`${(maxEdge * 100).toFixed(0)}%`} accent />
           </div>
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        <aside className="zen-panel h-fit rounded-xl p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="zen-text text-sm font-bold">扫描索引</span>
-            <span className="live-dot h-2 w-2 rounded-full bg-emerald-300" />
-          </div>
-          <div className="space-y-2">
-            {days.map(([day, matches], index) => (
-              <a
-                key={day}
-                href={`#day-${day}`}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
-              >
-                <span className="mono w-8 text-xs text-emerald-300">D{String(index + 1).padStart(2, "0")}</span>
-                <span className="flex-1 text-xs text-slate-300">{fmtDate(day)}</span>
-                <span className="mono text-[11px] text-slate-500">{matches.length}场</span>
-              </a>
-            ))}
-          </div>
+      <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <section className="zen-panel rounded-xl p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="zen-text text-sm font-bold">时间窗口</span>
+              <span className="live-dot h-2 w-2 rounded-full bg-emerald-300" />
+            </div>
+            <div className="space-y-2">
+              {dayWindows.map((window) => (
+                <Link
+                  key={window.page}
+                  href={timelineHref(window.page)}
+                  className={`block rounded-lg border px-3 py-2 transition ${
+                    window.page === currentPage
+                      ? "border-emerald-400/35 bg-emerald-400/12"
+                      : "border-white/10 bg-white/[0.035] hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="mono text-xs font-black text-emerald-300">D{pad(window.first)}-D{pad(window.last)}</span>
+                    <span className="mono text-[11px] text-slate-500">{window.matchCount}场</span>
+                  </div>
+                  <div className="mt-1 truncate text-xs text-slate-300">{window.label}</div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="zen-panel rounded-xl p-4">
+            <div className="mb-3 mono text-[10px] uppercase tracking-[0.22em] text-slate-500">current days</div>
+            <div className="space-y-2">
+              {visibleDays.map(([day, matches], index) => (
+                <a
+                  key={day}
+                  href={`#day-${day}`}
+                  className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                >
+                  <span className="mono w-8 text-xs text-emerald-300">D{pad(dayStart + index + 1)}</span>
+                  <span className="flex-1 text-xs text-slate-300">{fmtShortDate(day)}</span>
+                  <span className="mono text-[11px] text-slate-500">{matches.length}场</span>
+                </a>
+              ))}
+            </div>
+          </section>
         </aside>
 
         <div className="space-y-5">
-          {days.map(([day, matches], dayIndex) => (
+          <div className="zen-panel flex flex-col gap-3 rounded-xl p-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="mono text-[10px] uppercase tracking-[0.22em] text-slate-500">match window</div>
+              <div className="mt-1 text-sm font-semibold text-white">
+                D{pad(visibleStartDay)}-D{pad(visibleEndDay)} · {visibleMatchCount} 场 · 第 {currentPage}/{totalPages} 页
+              </div>
+            </div>
+            <TimelinePagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+
+          {visibleDays.map(([day, matches], index) => (
             <section key={day} id={`day-${day}`} className="zen-panel scroll-mt-28 rounded-xl p-4">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-emerald-400/15 pb-3">
                 <div>
                   <div className="mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-                    matchday {String(dayIndex + 1).padStart(2, "0")}
+                    matchday {pad(dayStart + index + 1)}
                   </div>
                   <h2 className="mt-1 text-xl font-black text-white">{fmtDate(day)}</h2>
                 </div>
@@ -141,9 +193,9 @@ export default async function TimelinePage() {
                       </div>
 
                       <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-3">
-                        <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-[11px] text-slate-500">
                           <span>AI 胜平负 · 公平赔率</span>
-                          <span>倾向 {favorite} · {(confidence * 100).toFixed(0)}% · 点击看依据</span>
+                          <span className="text-right">倾向 {favorite} · {(confidence * 100).toFixed(0)}% · 点击看依据</span>
                         </div>
                         {analysis && p && home && away ? (
                           <>
@@ -179,7 +231,14 @@ export default async function TimelinePage() {
             </section>
           ))}
 
-          {final && (
+          <div className="zen-panel flex flex-col gap-3 rounded-xl p-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-slate-400">
+              当前窗口 D{pad(visibleStartDay)}-D{pad(visibleEndDay)}，共 {visibleMatchCount} 场。
+            </div>
+            <TimelinePagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+
+          {final && finalPage && (
             <section className="zen-panel rounded-xl p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -187,8 +246,11 @@ export default async function TimelinePage() {
                   <div className="mt-1 text-lg font-black text-white">决赛 · {fmtDate(final.kickoff.slice(0, 10))}</div>
                   <div className="text-sm text-slate-500">{final.venue} · {final.city}</div>
                 </div>
-                <Link href={`/match/${final.id}`} className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/15">
-                  查看决赛节点
+                <Link
+                  href={currentPage === finalPage ? `/match/${final.id}` : timelineHref(finalPage)}
+                  className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/15"
+                >
+                  {currentPage === finalPage ? "查看决赛节点" : `跳到 D${pad((finalPage - 1) * DAYS_PER_PAGE + 1)} 决赛窗口`}
                 </Link>
               </div>
             </section>
@@ -197,6 +259,109 @@ export default async function TimelinePage() {
       </div>
     </div>
   );
+}
+
+function TimelinePagination({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
+  const pages = pageNumberWindow(currentPage, totalPages);
+  return (
+    <nav aria-label="赛程分页" className="flex flex-wrap items-center gap-1.5">
+      <PageLink href={timelineHref(currentPage - 1)} disabled={currentPage <= 1} title="上一页">
+        ‹
+      </PageLink>
+      {pages.map((item, index) =>
+        item === "dots" ? (
+          <span key={`dots-${index}`} className="mono px-1 text-xs text-slate-600">...</span>
+        ) : (
+          <PageLink key={item} href={timelineHref(item)} active={item === currentPage} title={`第 ${item} 页`}>
+            {item}
+          </PageLink>
+        ),
+      )}
+      <PageLink href={timelineHref(currentPage + 1)} disabled={currentPage >= totalPages} title="下一页">
+        ›
+      </PageLink>
+    </nav>
+  );
+}
+
+function PageLink({
+  href,
+  children,
+  active,
+  disabled,
+  title,
+}: {
+  href: string;
+  children: ReactNode;
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+}) {
+  const className = `mono grid h-8 min-w-8 place-items-center rounded-lg border px-2 text-xs font-black transition ${
+    active
+      ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
+      : disabled
+        ? "cursor-not-allowed border-white/5 bg-white/[0.02] text-slate-700"
+        : "border-white/10 bg-white/[0.035] text-slate-300 hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-white"
+  }`;
+  if (disabled) {
+    return (
+      <span className={className} title={title} aria-disabled="true">
+        {children}
+      </span>
+    );
+  }
+  return (
+    <Link href={href} className={className} title={title} aria-current={active ? "page" : undefined}>
+      {children}
+    </Link>
+  );
+}
+
+function pageWindows(days: Array<[string, typeof MATCHES]>) {
+  return Array.from({ length: Math.max(1, Math.ceil(days.length / DAYS_PER_PAGE)) }, (_, index) => {
+    const start = index * DAYS_PER_PAGE;
+    const windowDays = days.slice(start, start + DAYS_PER_PAGE);
+    return {
+      page: index + 1,
+      first: start + 1,
+      last: start + windowDays.length,
+      label: `${fmtShortDate(windowDays[0]?.[0] ?? "")} - ${fmtShortDate(windowDays[windowDays.length - 1]?.[0] ?? "")}`,
+      matchCount: windowDays.reduce((sum, [, matches]) => sum + matches.length, 0),
+    };
+  });
+}
+
+function pageNumberWindow(currentPage: number, totalPages: number): Array<number | "dots"> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const set = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  const numbers = [...set].filter((page) => page >= 1 && page <= totalPages).sort((a, b) => a - b);
+  const out: Array<number | "dots"> = [];
+  numbers.forEach((page, index) => {
+    if (index > 0 && page - numbers[index - 1] > 1) out.push("dots");
+    out.push(page);
+  });
+  return out;
+}
+
+function pageForDay(day: string, days: Array<[string, typeof MATCHES]>): number {
+  const index = days.findIndex(([d]) => d === day);
+  if (index < 0) return 1;
+  return Math.floor(index / DAYS_PER_PAGE) + 1;
+}
+
+function timelineHref(page: number): string {
+  return page <= 1 ? "/timeline" : `/timeline?page=${page}`;
+}
+
+function clampPage(value: string | undefined, totalPages: number): number {
+  const page = Number(value);
+  if (!Number.isFinite(page) || page < 1) return 1;
+  return Math.min(Math.floor(page), totalPages);
+}
+
+function readParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function OddsCell({ label, value }: { label: string; value: number }) {
@@ -268,6 +433,12 @@ function fmtDate(d: string): string {
   return date.toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" });
 }
 
+function fmtShortDate(d: string): string {
+  if (!d) return "待定";
+  const date = new Date(d + "T00:00:00");
+  return date.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
+}
+
 function stageLabel(stage: string): string {
   const labels: Record<string, string> = {
     "Round of 32": "32 强",
@@ -278,4 +449,8 @@ function stageLabel(stage: string): string {
     Final: "决赛",
   };
   return labels[stage] ?? stage;
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
 }

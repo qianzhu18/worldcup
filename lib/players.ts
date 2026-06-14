@@ -1,7 +1,8 @@
 // Player pool generated from public World Cup 2026 squad pages. Portraits use
-// local SVG caricatures so the UI has stable visual identity without relying on
-// licensed photography.
+// real headshot photos where available and deterministic local SVG avatars
+// otherwise, so list previews never depend on every external image finishing.
 import { GENERATED_PLAYERS } from "./generated/player-data";
+import { PLAYER_PHOTOS, PLAYER_ZH_NAMES } from "./generated/player-photos";
 
 export type Player = {
   id: string;
@@ -20,7 +21,10 @@ export type Player = {
   stats: { apps: number; goals: number; assists: number; xg: number };
 };
 
-export const PLAYERS: Player[] = GENERATED_PLAYERS;
+export const PLAYERS: Player[] = GENERATED_PLAYERS.map((player) => ({
+  ...player,
+  zh: PLAYER_ZH_NAMES[player.id] ?? player.zh,
+}));
 
 export function playerById(id: string): Player | undefined {
   return PLAYERS.find((p) => p.id === id);
@@ -29,7 +33,7 @@ export function playersByTeam(code: string): Player[] {
   return PLAYERS.filter((p) => p.team === code);
 }
 export function playerPhoto(p: Player): string {
-  return p.photo ?? cartoonPortrait(p);
+  return p.photo ?? PLAYER_PHOTOS[p.id] ?? cartoonPortrait(p);
 }
 
 type PortraitConfig = {
