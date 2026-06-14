@@ -1,9 +1,20 @@
 # World Cup Project Todo
 
-Version: 2026-06-14.1
+Version: 2026-06-14.2
 Updated: 2026-06-14
 
-## Current Task: Docker One-Command Deployment
+## Current Task: Fix Sports Guess AI Battle Loading Failure
+
+- [x] Confirm current worktree status and avoid unrelated user edits.
+- [x] Trace sports guess AI battle page, API route, and AI model call path.
+- [x] Reproduce the API hanging/failing behavior locally.
+- [x] Add a regression smoke check for AI battle predictions.
+- [x] Implement fast AI-battle fallback behavior.
+- [x] Stabilize production build by caching shared Polymarket market fetches.
+- [x] Verify the local API, build, and smoke check.
+- [ ] Commit and push this task's changes.
+
+## Previous Task: Docker One-Command Deployment
 
 - [x] Confirm project root, git status, and existing deployment files.
 - [x] Add production Dockerfile for the Next.js standalone build.
@@ -83,6 +94,11 @@ Updated: 2026-06-14
 
 ## Findings Log
 
+- 2026-06-14 AI battle fix: `/api/sports-guess/ai-predictions` could hang or return an empty prediction list when all external AI persona calls failed, causing the AI battle UI to show `AI 预测加载失败，请稍后重试`.
+- 2026-06-14 AI battle fix: Added a local Elo/persona fallback so the endpoint returns three renderable AI battle predictions even when the configured AI key or gateway fails.
+- 2026-06-14 AI battle verification: `pnpm test:smoke:ai-battle` passed against local Next dev on port 3001 in 556ms with 3 predictions after the gateway returned 401 for all three models.
+- 2026-06-14 build verification: `pnpm exec tsc --noEmit` passed.
+- 2026-06-14 build verification: `pnpm build` generated all 268 static pages after adding shared Polymarket fetch caching and shorter parallel market fetches, then failed at standalone trace copying with Windows `EPERM` symlink permission for `react` / `@next/env`.
 - Project root is `worldcup-polymarket-win`; the parent directory is not a git repository.
 - Current branch is `main`, one local commit ahead of `origin/main` before this task.
 - README already references a Vercel URL, but package scripts still emphasize Cloudflare/OpenNext deployment.

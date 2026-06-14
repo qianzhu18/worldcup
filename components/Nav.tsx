@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +11,7 @@ const links = [
   { href: "/leaderboard", label: "竞技排行榜", short: "排行", highlight: true },
   { href: "/teams", label: "球队", short: "球队" },
   { href: "/players", label: "球员", short: "球员" },
+  { href: "/sports-guess", label: "体育竞猜", short: "竞猜" },
 ];
 
 export function Nav() {

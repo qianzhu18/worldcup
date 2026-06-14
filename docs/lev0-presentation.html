@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JMWL World Cup · 项目介绍</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink-950: #050608;
+      --ink-900: #0a0c10;
+      --gold-400: #f5c518;
+      --flame: #ff4d1c;
+      --magenta: #ff2d78;
+      --electric: #19f0d4;
+      --volt: #c6ff3a;
+      --text: #f4f6fb;
+      --muted: #9aa3b5;
+      --border: rgba(255, 255, 255, 0.08);
+      --font-impact: "Bebas Neue", "Arial Black", sans-serif;
+      --font-body: "DM Sans", system-ui, sans-serif;
+      --header-h: 56px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-h) + 16px);
+    }
+
+    body {
+      background: var(--ink-950);
+      color: var(--text);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient background ── */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: orbFloat 18s ease-in-out infinite;
+    }
+    .orb-1 { width: 420px; height: 420px; background: rgba(25,240,212,0.12); top: -8%; left: -5%; animation-delay: 0s; }
+    .orb-2 { width: 360px; height: 360px; background: rgba(245,197,24,0.10); bottom: 10%; right: -6%; animation-delay: -6s; }
+    .orb-3 { width: 280px; height: 280px; background: rgba(255,77,28,0.08); top: 45%; left: 55%; animation-delay: -12s; }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.08); }
+      66% { transform: translate(-20px, 25px) scale(0.95); }
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 100% 80% at 50% 30%, black 10%, transparent 75%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header + scroll progress ── */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      background: rgba(5, 6, 8, 0.72);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: var(--font-impact);
+      font-size: 1.35rem;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo span { color: var(--gold-400); }
+
+    .header-link {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--electric);
+      text-decoration: none;
+      padding: 0.4rem 0.85rem;
+      border: 1px solid rgba(25,240,212,0.3);
+      border-radius: 8px;
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+    .header-link:hover {
+      background: rgba(25,240,212,0.1);
+      box-shadow: 0 0 20px rgba(25,240,212,0.2);
+    }
+
+    .scroll-progress {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      height: 2px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--electric), var(--gold-400), var(--flame));
+      z-index: 201;
+      transition: width 0.08s linear;
+      box-shadow: 0 0 12px rgba(25,240,212,0.5);
+    }
+
+    /* ── Side nav dots ── */
+    .side-nav {
+      position: fixed;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .side-nav a {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: all 0.3s;
+      position: relative;
+    }
+    .side-nav a.active {
+      background: var(--electric);
+      box-shadow: 0 0 12px rgba(25,240,212,0.6);
+      transform: scale(1.35);
+    }
+    .side-nav a:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(16,19,25,0.95);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) { .side-nav { display: none; } }
+
+    /* ── Main layout ── */
+    main { position: relative; z-index: 1; }
+
+    section {
+      position: relative;
+      padding: clamp(4rem, 10vh, 6rem) clamp(1.25rem, 5vw, 3rem);
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    section.hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: calc(var(--header-h) + 2rem);
+    }
+
+    section.full-bleed {
+      max-width: none;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .section-inner { max-width: 1100px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3rem); }
+
+    .section-divider {
+      height: 1px;
+      max-width: 1100px;
+      margin: 0 auto;
+      background: linear-gradient(90deg, transparent, rgba(25,240,212,0.35), rgba(245,197,24,0.35), transparent);
+    }
+
+    /* ── Reveal animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1), transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .reveal-left { transform: translateX(-36px); }
+    .reveal-right { transform: translateX(36px); }
+    .reveal-scale { transform: scale(0.92); }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translate(0) scale(1);
+    }
+
+    .stagger > * {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .stagger.visible > *:nth-child(1) { transition-delay: 0.05s; }
+    .stagger.visible > *:nth-child(2) { transition-delay: 0.12s; }
+    .stagger.visible > *:nth-child(3) { transition-delay: 0.19s; }
+    .stagger.visible > *:nth-child(4) { transition-delay: 0.26s; }
+    .stagger.visible > *:nth-child(5) { transition-delay: 0.33s; }
+    .stagger.visible > *:nth-child(6) { transition-delay: 0.40s; }
+    .stagger.visible > * { opacity: 1; transform: translateY(0); }
+
+    /* ── Typography ── */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--electric);
+      margin-bottom: 1rem;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px; height: 2px;
+      background: linear-gradient(90deg, var(--electric), transparent);
+      animation: lineGrow 1.2s ease forwards;
+    }
+    @keyframes lineGrow { from { width: 0; } to { width: 28px; } }
+
+    h1 {
+      font-family: var(--font-impact);
+      font-size: clamp(3.2rem, 10vw, 6.5rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    h1 .accent {
+      color: var(--gold-400);
+      animation: textGlow 3s ease-in-out infinite;
+    }
+    @keyframes textGlow {
+      0%, 100% { text-shadow: 0 0 30px rgba(245,197,24,0.3); }
+      50% { text-shadow: 0 0 60px rgba(245,197,24,0.55), 0 0 90px rgba(25,240,212,0.2); }
+    }
+
+    h2 {
+      font-family: var(--font-impact);
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      line-height: 1.05;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+    .subtitle {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 680px;
+      margin-top: 1.25rem;
+    }
+
+    .lead {
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+      line-height: 1.75;
+      color: #c8d0df;
+      max-width: 820px;
+    }
+
+    /* ── LIVE Marquee ── */
+    .marquee-wrap {
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,12,16,0.6);
+      padding: 0.65rem 0;
+      margin: 2rem 0 0;
+    }
+
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: marquee 28s linear infinite;
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .marquee-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 1.5rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+    .marquee-item .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--flame);
+      animation: pulse 1.2s ease infinite;
+    }
+    .marquee-item strong { color: var(--gold-400); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,77,28,0.6); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(255,77,28,0); }
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .stat {
+      text-align: center;
+      min-width: 100px;
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(16,19,25,0.6);
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .stat:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245,197,24,0.35);
+      box-shadow: 0 8px 32px rgba(245,197,24,0.12);
+    }
+
+    .stat-num {
+      font-family: var(--font-impact);
+      font-size: clamp(2.4rem, 4vw, 3.2rem);
+      color: var(--gold-400);
+      line-height: 1;
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
+
+    /* ── Cards ── */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card {
+      position: relative;
+      background: rgba(16, 19, 25, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem 1.35rem;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), border-color 0.35s, box-shadow 0.35s;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+      transition: left 0.6s ease;
+    }
+    .card:hover::after { left: 120%; }
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(25,240,212,0.3);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(25,240,212,0.08);
+    }
+
+    .card-icon { font-size: 1.6rem; margin-bottom: 0.65rem; display: inline-block; animation: iconBob 3s ease-in-out infinite; }
+    @keyframes iconBob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .card p, .card li { font-size: 0.88rem; line-height: 1.6; color: var(--muted); }
+    .card ul { list-style: none; }
+    .card li { position: relative; padding-left: 1rem; margin-bottom: 0.35rem; }
+    .card li::before { content: "▸"; position: absolute; left: 0; color: var(--electric); font-size: 0.7rem; }
+
+    .card.highlight { border-color: rgba(245,197,24,0.25); background: linear-gradient(135deg, rgba(245,197,24,0.07) 0%, rgba(16,19,25,0.92) 100%); }
+    .card.electric { border-color: rgba(25,240,212,0.25); background: linear-gradient(135deg, rgba(25,240,212,0.07) 0%, rgba(16,19,25,0.92) 100%); }
+    .card.flame { border-color: rgba(255,77,28,0.3); background: linear-gradient(135deg, rgba(255,77,28,0.07) 0%, rgba(16,19,25,0.92) 100%); }
+
+    .callout {
+      border-radius: 14px;
+      padding: 1.1rem 1.35rem;
+      margin: 1.25rem 0;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      border-left: 3px solid;
+    }
+    .callout.electric { background: rgba(25,240,212,0.06); border-color: var(--electric); color: #b8f5ec; }
+    .callout.yellow { background: rgba(245,197,24,0.08); border-color: var(--gold-400); color: #e8dcc0; }
+
+    /* ── Animated flow ── */
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 1.5rem 0;
+    }
+
+    .flow-node {
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: rgba(16,19,25,0.9);
+      animation: flowPulse 2.5s ease-in-out infinite;
+    }
+    .flow-node:nth-child(1) { animation-delay: 0s; }
+    .flow-node:nth-child(3) { animation-delay: 0.4s; }
+    .flow-node:nth-child(5) { animation-delay: 0.8s; }
+    .flow-node:nth-child(7) { animation-delay: 1.2s; }
+    .flow-node:nth-child(9) { animation-delay: 1.6s; }
+
+    @keyframes flowPulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(25,240,212,0); border-color: var(--border); }
+      50% { box-shadow: 0 0 16px rgba(25,240,212,0.15); border-color: rgba(25,240,212,0.35); }
+    }
+
+    .flow-arrow {
+      color: var(--electric);
+      font-size: 1rem;
+      animation: arrowBlink 1.5s ease infinite;
+    }
+    @keyframes arrowBlink {
+      0%, 100% { opacity: 0.4; transform: translateX(0); }
+      50% { opacity: 1; transform: translateX(3px); }
+    }
+
+    /* ── Steps timeline ── */
+    .timeline {
+      position: relative;
+      margin-top: 1.5rem;
+      padding-left: 2rem;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 15px; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--electric), var(--gold-400), var(--flame));
+      transform-origin: top;
+      transform: scaleY(0);
+      transition: transform 1.2s ease;
+    }
+    .timeline.visible::before { transform: scaleY(1); }
+
+    .step-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 1rem;
+      padding: 1rem 0 1.25rem;
+    }
+
+    .step-num {
+      width: 32px; height: 32px;
+      margin-left: -2rem;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-impact);
+      font-size: 1rem;
+      color: var(--ink-950);
+      background: var(--gold-400);
+      box-shadow: 0 0 16px rgba(245,197,24,0.4);
+      z-index: 1;
+    }
+
+    .step-body h3 { font-size: 0.95rem; }
+    .step-body p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; margin-top: 0.25rem; }
+
+    /* ── Signal bars ── */
+    .signal-bars { margin-top: 1.5rem; }
+    .signal-row { margin-bottom: 1.1rem; }
+    .signal-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .signal-label span:last-child { color: var(--gold-400); font-family: var(--font-impact); font-size: 1.1rem; }
+    .signal-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .signal-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0;
+      transition: width 1.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    .signal-fill.model { background: linear-gradient(90deg, #19f0d4, #0ea5e9); }
+    .signal-fill.ai { background: linear-gradient(90deg, #f5c518, #ff9f1c); }
+    .signal-fill.market { background: linear-gradient(90deg, #ff4d1c, #ff2d78); }
+
+    /* ── Misc ── */
+    .url-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+      padding: 0.7rem 1.35rem;
+      border-radius: 12px;
+      background: rgba(25,240,212,0.1);
+      border: 1px solid rgba(25,240,212,0.35);
+      color: var(--electric);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      animation: chipGlow 2.5s ease infinite;
+    }
+    @keyframes chipGlow {
+      0%, 100% { box-shadow: 0 0 0 rgba(25,240,212,0); }
+      50% { box-shadow: 0 0 24px rgba(25,240,212,0.25); }
+    }
+    .url-chip:hover { background: rgba(25,240,212,0.18); transform: scale(1.03); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+    .tag {
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: all 0.25s;
+    }
+    .tag:hover { color: var(--electric); border-color: rgba(25,240,212,0.3); transform: translateY(-2px); }
+
+    .feature-pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+    .pill-gold { background: rgba(245,197,24,0.15); color: var(--gold-400); }
+    .pill-electric { background: rgba(25,240,212,0.12); color: var(--electric); }
+    .pill-flame { background: rgba(255,77,28,0.12); color: var(--flame); }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      animation: bounce 2s ease infinite;
+    }
+    .scroll-hint span {
+      width: 1px; height: 36px;
+      background: linear-gradient(180deg, var(--electric), transparent);
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.6; }
+      50% { transform: translateX(-50%) translateY(8px); opacity: 1; }
+    }
+
+    .cta-section {
+      text-align: center;
+      padding: clamp(5rem, 12vh, 8rem) 1.5rem;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 100%, rgba(245,197,24,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 0%, rgba(25,240,212,0.06) 0%, transparent 50%);
+    }
+
+    .cta-section h1 { font-size: clamp(2.5rem, 7vw, 4.5rem); }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="logo" href="#top">JMWL <span>WORLD CUP</span></a>
+    <a class="header-link" href="https://worldcup-polymarket-win.vercel.app" target="_blank" rel="noopener">立即体验 →</a>
+  </header>
+  <div class="scroll-progress" id="scrollProgress"></div>
+
+  <nav class="side-nav" id="sideNav" aria-label="章节导航">
+    <a href="#top" data-label="首页" class="active"></a>
+    <a href="#about" data-label="定位"></a>
+    <a href="#gameplay" data-label="玩法"></a>
+    <a href="#arena" data-label="AI 竞技"></a>
+    <a href="#market" data-label="市场"></a>
+    <a href="#data" data-label="数据"></a>
+    <a href="#signals" data-label="信号"></a>
+    <a href="#account" data-label="账号"></a>
+    <a href="#features" data-label="特色"></a>
+    <a href="#demo" data-label="演示"></a>
+  </nav>
+
+  <main id="top">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="reveal">
+        <div class="eyebrow">2026 FIFA World Cup</div>
+        <h1>JMWL <span class="accent">World Cup</span></h1>
+        <p class="subtitle">
+          AI + 预测市场 + 世界杯数据的一站式分析平台<br />
+          看懂盘口 · 跟 AI 下注积分 · 验证你的判断
+        </p>
+      </div>
+
+      <div class="stats stagger" id="heroStats">
+        <div class="stat"><div class="stat-num" data-count="48">0</div><div class="stat-label">参赛球队</div></div>
+        <div class="stat"><div class="stat-num" data-count="104">0</div><div class="stat-label">赛程场次</div></div>
+        <div class="stat"><div class="stat-num" data-count="1255">0</div><div class="stat-label">球员档案</div></div>
+        <div class="stat"><div class="stat-num" data-count="3">0</div><div class="stat-label">AI 模型对战</div></div>
+      </div>
+
+      <div class="reveal" style="transition-delay: 0.2s;">
+        <a class="url-chip" href="https://worldcup-polymarket-win.vercel.app" target="_blank" rel="noopener">
+          🌐 worldcup-polymarket-win.vercel.app
+        </a>
+        <div class="tag-row">
+          <span class="tag">Polymarket 实时盘口</span>
+          <span class="tag">MiniMax AI</span>
+          <span class="tag">体育竞猜积分</span>
+          <span class="tag">Elo 量化模型</span>
+        </div>
+      </div>
+
+      <div class="scroll-hint">向下滚动<span></span></div>
+    </section>
+
+    <!-- Marquee -->
+    <div class="full-bleed marquee-wrap reveal">
+      <div class="marquee-track">
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>BRA</strong> 18.2%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>FRA</strong> 14.7%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ARG</strong> 12.1%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ENG</strong> 9.8%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ESP</strong> 8.4%</span>
+        <span class="marquee-item"><span class="live-dot"></span> AI Edge · <strong>GER vs MEX</strong> +4.2%</span>
+        <span class="marquee-item"><span class="live-dot"></span> 热度异动 · <strong>USA vs POR</strong> 24h +127%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>BRA</strong> 18.2%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>FRA</strong> 14.7%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ARG</strong> 12.1%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ENG</strong> 9.8%</span>
+        <span class="marquee-item"><span class="live-dot"></span> LIVE · <strong>ESP</strong> 8.4%</span>
+        <span class="marquee-item"><span class="live-dot"></span> AI Edge · <strong>GER vs MEX</strong> +4.2%</span>
+        <span class="marquee-item"><span class="live-dot"></span> 热度异动 · <strong>USA vs POR</strong> 24h +127%</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- About -->
+    <section id="about">
+      <div class="reveal">
+        <div class="eyebrow">产品定位</div>
+        <h2>这是什么？</h2>
+        <div class="callout electric">
+          把 <strong>Polymarket 实时预测市场</strong>、<strong>多 AI 独立定价</strong> 和 <strong>世界杯全量数据</strong> 揉进一个站——
+          你可以当分析师扫信号，也可以当玩家押积分跟 AI 较劲。
+        </div>
+      </div>
+      <div class="grid-2 stagger" style="margin-top: 1.5rem;">
+        <div class="card highlight">
+          <span class="feature-pill pill-electric">分析模式</span>
+          <h3>📡 市场洞察</h3>
+          <p>扫描 Polymarket 热度与 AI Edge 偏差，用量化模型对照市场定价，找到「市场错了」的信号——不涉及真金下注。</p>
+        </div>
+        <div class="card flame">
+          <span class="feature-pill pill-flame">玩法模式</span>
+          <h3>🎮 体育竞猜</h3>
+          <p>赛前看三位 AI 吵嘴，选方向押积分，赛后结算排行。每日签到领 Token，用虚拟积分验证你的判断力。</p>
+        </div>
+      </div>
+      <p class="lead reveal" style="margin-top: 1.5rem;">
+        Slogan：<strong style="color: var(--gold-400);">赛前有底，赛后有谱。</strong>
+        模型给参考，结算给反馈，排行榜给成就感。
+      </p>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Gameplay -->
+    <section id="gameplay">
+      <div class="reveal">
+        <div class="eyebrow">怎么玩</div>
+        <h2>体育竞猜 · 核心链路</h2>
+        <div class="flow">
+          <span class="flow-node">今日比赛</span><span class="flow-arrow">→</span>
+          <span class="flow-node">三位 AI 概率对照</span><span class="flow-arrow">→</span>
+          <span class="flow-node">选胜/平/负 + 押积分</span><span class="flow-arrow">→</span>
+          <span class="flow-node">赛后结算</span><span class="flow-arrow">→</span>
+          <span class="flow-node">排行榜</span>
+        </div>
+      </div>
+      <div class="timeline reveal" id="gameTimeline">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>进入「体育竞猜」</h3>
+            <p>浏览今日/未来比赛列表，开赛前 1 小时截止竞猜。每场比赛显示三位 AI 的胜平负概率条。</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>看 AI 辩论 · 选边站队</h3>
+            <p>三位 AI 人格各自给出预测与理由，系统自动生成「吵嘴」对话。你可以跟 AI 一致，也可以反着来。</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>押 Token · 动态赔率</h3>
+            <p>初始 1000 Token，每日签到 +200。赔率由 AI 平均概率反推——AI 越看好的选项，赔率越低、回报越小。</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>赛后结算 · 冲榜</h3>
+            <p>猜对按赔率返还 Token，猜错扣除。记录保存在本地，随时查看历史战绩与盈亏。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- AI Arena -->
+    <section id="arena">
+      <div class="reveal">
+        <div class="eyebrow">特色玩法</div>
+        <h2>AI 决策竞技场</h2>
+        <p class="lead">不是单一 AI 给答案，而是三位「有性格」的模型同台竞技——让预测变成可观看的决策过程。</p>
+      </div>
+      <div class="grid-3 stagger" style="margin-top: 1.5rem;">
+        <div class="card electric">
+          <div class="card-icon">🧠</div>
+          <h3>多模型对照</h3>
+          <p>每场比赛展示 3 位 AI 的独立胜平负概率、置信度、关键依据与一句话总结。</p>
+        </div>
+        <div class="card electric">
+          <div class="card-icon">💬</div>
+          <h3>AI 辩论生成</h3>
+          <p>当模型意见分歧时，自动生成对话式「吵嘴」脚本——像看赛前 pundit 节目一样读预测。</p>
+        </div>
+        <div class="card electric">
+          <div class="card-icon">📊</div>
+          <h3>赔率联动 AI</h3>
+          <p>竞猜赔率不是拍脑袋，而是由 AI 平均隐含概率反算——概率越低的选择，赔率越高。</p>
+        </div>
+      </div>
+      <div class="callout yellow reveal" style="margin-top: 1.5rem;">
+        <strong>决策竞技场（规划中）：</strong>登录用户可押积分选「信哪个 AI 模型」，赛后结算模型准确率排行榜——谁才是世界杯期间的最强 AI？
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Market -->
+    <section id="market">
+      <div class="reveal">
+        <div class="eyebrow">分析看板</div>
+        <h2>首页 · 市场扫描</h2>
+      </div>
+      <div class="grid-2 stagger" style="margin-top: 1rem;">
+        <div class="card highlight">
+          <span class="feature-pill pill-gold">LIVE</span>
+          <h3>🔴 夺冠概率跑马灯</h3>
+          <p>顶栏实时滚动 Polymarket 48 队夺冠隐含概率，含国旗，悬停暂停——一眼感知市场风向。</p>
+        </div>
+        <div class="card highlight">
+          <span class="feature-pill pill-gold">Edge</span>
+          <h3>🤖 AI vs 市场对照</h3>
+          <p>MiniMax 对市场<strong>盲测</strong>独立定价，与 Polymarket 隐含概率并排——偏差即 Edge 信号。</p>
+        </div>
+        <div class="card">
+          <h3>🔥 盘口热度榜</h3>
+          <p>24h 成交增速 + 总量 + 流动性 + 临场权重，四因子算法找出正在被资金涌入的盘口。</p>
+        </div>
+        <div class="card">
+          <h3>⚡ 跨平台价差雷达</h3>
+          <p>Polymarket 实时价 vs 对照平台示例价差，标记潜在 arbitrage 窗口（V2 接入 Kalshi 真实数据）。</p>
+        </div>
+      </div>
+      <p class="lead reveal" style="margin-top: 1.25rem; font-size: 0.95rem;">
+        模型夺冠概率 Top 8 · Elo 多因子引擎输出，与 Polymarket 市场冠军价独立对照。
+      </p>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Data -->
+    <section id="data">
+      <div class="reveal">
+        <div class="eyebrow">深度分析</div>
+        <h2>赛程 · 比赛 · 数据</h2>
+      </div>
+      <div class="two-col stagger" style="margin-top: 1rem;">
+        <div>
+          <div class="card electric" style="margin-bottom: 0.85rem;">
+            <h3>📅 赛程时间线</h3>
+            <ul>
+              <li>104 场按日分组，含倒计时与场馆</li>
+              <li>每场附带模型胜率条与公平赔率</li>
+              <li>扫描索引快速跳转到目标比赛</li>
+            </ul>
+          </div>
+          <div class="card electric">
+            <h3>⚽ 比赛详情页</h3>
+            <ul>
+              <li>AI 战术分析卡（MiniMax，不看市场赔率）</li>
+              <li>泊松比分预测矩阵 + H2H 交锋</li>
+              <li>量化模型三向胜率 · 可提交胜平负预测</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom: 0.85rem;">
+            <h3>🌍 球队中心 · 48 队</h3>
+            <ul>
+              <li>12 组分组总览 · 主教练履历与近期战绩</li>
+              <li>Elo 调整因子 · 球队赛程与阵容</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>⭐ 球员中心 · 1255 人</h3>
+            <ul>
+              <li>Watchlist 排行 · 纯 SVG 六维雷达图</li>
+              <li>打法标签 · 进球/助攻/xG 赛事数据</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Signals -->
+    <section id="signals">
+      <div class="reveal">
+        <div class="eyebrow">信号引擎</div>
+        <h2>博弈信号 · 三源融合</h2>
+        <p class="lead">不只看一个数字，而是把三种独立信息源加权融合，输出 A+ 到 D 级信号。</p>
+      </div>
+      <div class="grid-3 stagger" style="margin-top: 1rem;">
+        <div class="card highlight">
+          <span class="feature-pill pill-electric">55%</span>
+          <h3>量化模型</h3>
+          <p>Elo + 教练胜率 + 近期状态 + 球员池强度。纯历史数据，不参考任何市场信息。</p>
+        </div>
+        <div class="card highlight">
+          <span class="feature-pill pill-gold">35%</span>
+          <h3>AI 独立定价</h3>
+          <p>AI 被禁止参考博彩/预测市场赔率，仅基于实力、阵容、大赛经验给出独立概率。</p>
+        </div>
+        <div class="card highlight">
+          <span class="feature-pill pill-flame">10%</span>
+          <h3>市场对照</h3>
+          <p>Polymarket 真金白银定价。极端价格时轻微 contrarian 反向调整，捕捉过度反应。</p>
+        </div>
+      </div>
+
+      <div class="signal-bars reveal" id="signalBars">
+        <div class="signal-row">
+          <div class="signal-label"><span>量化模型</span><span>55%</span></div>
+          <div class="signal-track"><div class="signal-fill model" data-width="55"></div></div>
+        </div>
+        <div class="signal-row">
+          <div class="signal-label"><span>AI 独立定价</span><span>35%</span></div>
+          <div class="signal-track"><div class="signal-fill ai" data-width="35"></div></div>
+        </div>
+        <div class="signal-row">
+          <div class="signal-label"><span>市场对照</span><span>10%</span></div>
+          <div class="signal-track"><div class="signal-fill market" data-width="10"></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2 stagger" style="margin-top: 1.5rem;">
+        <div class="card">
+          <h3>看信号等级</h3>
+          <p>A+ / A 为高确信机会，B 值得观察，C / D 建议忽略。</p>
+        </div>
+        <div class="card">
+          <h3>看凯利仓位 & EV</h3>
+          <p>1/4 凯利保守策略 · 正期望值 EV 标注长期有利方向 · 单笔建议不超过总资金 10%。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Account -->
+    <section id="account">
+      <div class="reveal">
+        <div class="eyebrow">账号与记录</div>
+        <h2>登录 · 预测 · 排行</h2>
+      </div>
+      <div class="grid-2 stagger" style="margin-top: 1rem;">
+        <div class="card electric">
+          <h3>👤 用户体系</h3>
+          <ul>
+            <li>Supabase 邮箱注册 + 验证</li>
+            <li>游客可浏览全部看板，登录后保存预测</li>
+            <li>个人中心 · 我的预测记录列表</li>
+            <li>隐私政策 / 服务条款已上线</li>
+          </ul>
+        </div>
+        <div class="card electric">
+          <h3>📝 预测记录</h3>
+          <ul>
+            <li>比赛详情页提交胜平负预测</li>
+            <li>/predictions 查看历史预测</li>
+            <li>积分押注 / 成就 / 商城后端已就绪（UI 接入中）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>🏆 排行榜</h3>
+          <ul>
+            <li>竞猜 Token 排行 · 预测准确率追踪</li>
+            <li>未来：AI 模型准确率排行榜</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>📡 API 能力</h3>
+          <ul>
+            <li>/api/signals 博弈信号（支持 ?ai=true）</li>
+            <li>/api/predictions 用户预测 CRUD</li>
+            <li>生产冒烟测试全链路通过</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Features -->
+    <section id="features">
+      <div class="reveal">
+        <div class="eyebrow">产品特色</div>
+        <h2>为什么不一样？</h2>
+      </div>
+      <div class="grid-2 stagger" style="margin-top: 1rem;">
+        <div class="card highlight">
+          <h3>🎨 潮牌 Hype 视觉</h3>
+          <ul>
+            <li>Anton 冲击字 + 霓虹辉光 + 电光青/火焰橙/金牌色</li>
+            <li>MarketCard 扫光动效 · CountUp 数字滚动</li>
+            <li>LIVE 跑马灯 · 脉冲高亮 · 滚动揭示动画</li>
+            <li>体育激情 × 量化专业感，不是千篇一律的数据表格</li>
+          </ul>
+        </div>
+        <div class="card highlight">
+          <h3>🔬 方法论透明</h3>
+          <ul>
+            <li>AI 对市场盲测 · 量化模型不偷看赔率</li>
+            <li>三源融合权重公开 · 信号等级 + 凯利 + EV 可解释</li>
+            <li>热度算法四因子公式可溯源</li>
+            <li>定位「分析者」而非「赌徒」· 免责声明清晰</li>
+          </ul>
+        </div>
+        <div class="card electric">
+          <h3>⚙️ 工程交付</h3>
+          <ul>
+            <li>Next.js 15 + React 19 + Supabase + Vercel 生产部署</li>
+            <li>Polymarket Gamma API 实时 · 259 路由产物</li>
+            <li>Docker 一键部署 · Uptime 监控 4 核心端点</li>
+          </ul>
+        </div>
+        <div class="card electric">
+          <h3>🚀 路线图</h3>
+          <ul>
+            <li><strong>V1 ✓</strong> 盘口 + AI 雷达 + 竞猜 + 全量数据</li>
+            <li><strong>V2</strong> Kalshi 多平台价差 · 赔率走势 · 自动结算</li>
+            <li><strong>V3</strong> 价格提醒 · 分享卡片 · 欧冠/英超迁移</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Demo -->
+    <section id="demo">
+      <div class="reveal">
+        <div class="eyebrow">现场体验</div>
+        <h2>3 分钟演示路径</h2>
+        <a class="url-chip" href="https://worldcup-polymarket-win.vercel.app" target="_blank" rel="noopener">
+          🌐 worldcup-polymarket-win.vercel.app
+        </a>
+      </div>
+      <div class="grid-2 stagger" style="margin-top: 1.5rem;">
+        <div class="card highlight">
+          <h3>① 首页 · 30 秒</h3>
+          <ul>
+            <li>LIVE 跑马灯 · AI Edge 对照</li>
+            <li>盘口热度榜 · 模型夺冠 Top 8</li>
+          </ul>
+        </div>
+        <div class="card highlight">
+          <h3>② 体育竞猜 · 60 秒</h3>
+          <ul>
+            <li>/sports-guess 选一场比赛</li>
+            <li>看三位 AI 概率 + 辩论</li>
+            <li>押 Token · 查看赔率变化</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>③ 深度分析 · 45 秒</h3>
+          <ul>
+            <li>/timeline → /match/[id] AI 卡 + 泊松比分</li>
+            <li>/signals 博弈信号等级</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>④ 数据探索 · 45 秒</h3>
+          <ul>
+            <li>/teams 分组 · /players 雷达图</li>
+            <li>注册 → 提交预测 → /predictions</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section reveal" id="cta">
+      <div class="eyebrow" style="justify-content: center;">JMWL World Cup</div>
+      <h1>赛前有底 · <span class="accent">赛后有谱</span></h1>
+      <p class="subtitle" style="margin: 1.25rem auto; text-align: center;">
+        Polymarket 实时盘口 · 三 AI 同台竞技 · 积分竞猜验证判断<br />
+        104 场赛程 · 1255 球员 · 一套站看完全部
+      </p>
+      <a class="url-chip" href="https://worldcup-polymarket-win.vercel.app" target="_blank" rel="noopener">
+        🌐 立即体验
+      </a>
+    </section>
+
+  </main>
+
+  <footer>
+    本站仅供信息参考，非投资建议。预测市场存在风险，请遵守所在地区法律法规。<br />
+    © JMWL World Cup · 欢迎现场体验
+  </footer>
+
+  <script>
+    (function () {
+      /* Scroll progress */
+      const progressBar = document.getElementById("scrollProgress");
+      function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        progressBar.style.width = docHeight > 0 ? (scrollTop / docHeight * 100) + "%" : "0%";
+      }
+      window.addEventListener("scroll", updateProgress, { passive: true });
+
+      /* Intersection Observer – reveal */
+      const revealEls = document.querySelectorAll(".reveal, .stagger, .timeline");
+      const revealObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            if (entry.target.id === "heroStats") animateCounters(entry.target);
+            if (entry.target.id === "signalBars") animateBars(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+
+      revealEls.forEach((el) => revealObs.observe(el));
+      document.getElementById("heroStats")?.classList.add("stagger");
+
+      /* Counter animation */
+      function animateCounters(container) {
+        if (container.dataset.counted) return;
+        container.dataset.counted = "1";
+        container.querySelectorAll("[data-count]").forEach((el) => {
+          const target = +el.dataset.count;
+          const duration = 1400;
+          const start = performance.now();
+          function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased);
+            if (p < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        });
+      }
+
+      /* Signal bar animation */
+      function animateBars(container) {
+        if (container.dataset.barsDone) return;
+        container.dataset.barsDone = "1";
+        container.querySelectorAll(".signal-fill").forEach((bar, i) => {
+          setTimeout(() => {
+            bar.style.width = bar.dataset.width + "%";
+          }, i * 150);
+        });
+      }
+
+      /* Side nav active state */
+      const sections = document.querySelectorAll("section[id], #top");
+      const navLinks = document.querySelectorAll(".side-nav a");
+      const sectionObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id || "top";
+            navLinks.forEach((a) => {
+              a.classList.toggle("active", a.getAttribute("href") === "#" + id);
+            });
+          }
+        });
+      }, { threshold: 0.35, rootMargin: "-20% 0px -55% 0px" });
+
+      document.querySelectorAll("section[id], main#top").forEach((s) => sectionObs.observe(s));
+
+      /* Parallax orbs on scroll */
+      const orbs = document.querySelectorAll(".orb");
+      window.addEventListener("scroll", () => {
+        const y = window.scrollY;
+        orbs.forEach((orb, i) => {
+          orb.style.transform = `translateY(${y * (0.03 + i * 0.02)}px)`;
+        });
+      }, { passive: true });
+
+      /* Hero visible on load */
+      document.querySelector(".hero .reveal")?.classList.add("visible");
+      setTimeout(() => {
+        document.getElementById("heroStats")?.classList.add("visible");
+        animateCounters(document.getElementById("heroStats"));
+      }, 400);
+
+      updateProgress();
+    })();
+  </script>
+</body>
+</html>
