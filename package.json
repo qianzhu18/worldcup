@@ -15,6 +15,7 @@
     "deploy:preview": "vercel --yes",
     "deploy:prod": "vercel --prod --yes",
     "vercel:pull": "vercel pull --yes",
+    "test:smoke:ai-battle": "node scripts/smoke-ai-battle.mjs",
     "test:smoke:prod": "node scripts/smoke-production.mjs",
     "cf:build": "pnpm clean && opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
     "cf:preview": "pnpm clean && opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare preview",

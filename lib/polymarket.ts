@@ -4,6 +4,10 @@ import { getAllMockMarkets } from "./mock-market";
 import { proxyFetch } from "./proxy-fetch";
 
 const GAMMA = "https://gamma-api.polymarket.com";
+const MARKET_CACHE_TTL = 120 * 1000;
+const DEFAULT_POLYMARKET_TIMEOUT_MS = 3_000;
+
+let marketsCache: { t: number; promise: Promise<Market[]> } | null = null;
 
 export type Outcome = {
   label: string;
@@ -40,9 +44,15 @@ const WC_EVENT_SLUGS = [
   "fifa-world-cup-2026-winner",
 ];
 
+function polymarketTimeoutMs(): number {
+  const value = Number(process.env.POLYMARKET_TIMEOUT_MS);
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_POLYMARKET_TIMEOUT_MS;
+  return Math.max(1_000, Math.min(value, 10_000));
+}
+
 async function getJSON(url: string) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  const timeout = setTimeout(() => controller.abort(), polymarketTimeoutMs());
 
   try {
     const res = await proxyFetch(url, {
@@ -111,24 +121,24 @@ function eventToMarket(ev: any): Market {
   };
 }
 
-export async function getWorldCupMarkets(): Promise<Market[]> {
+async function loadWorldCupMarkets(): Promise<Market[]> {
   const out: Market[] = [];
   const seen = new Set<string>();
 
   try {
-    for (const slug of WC_EVENT_SLUGS) {
-      try {
-        const data = await getJSON(`${GAMMA}/events?slug=${slug}`);
-        const events = Array.isArray(data) ? data : [data];
-        for (const ev of events) {
-          if (!ev || seen.has(String(ev.id))) continue;
-          seen.add(String(ev.id));
-          out.push(eventToMarket(ev));
-        }
-      } catch {
-        /* skip unavailable slug */
+    const eventResults = await Promise.allSettled(
+      WC_EVENT_SLUGS.map((slug) => getJSON(`${GAMMA}/events?slug=${slug}`)),
+    );
+    for (const result of eventResults) {
+      if (result.status !== "fulfilled") continue;
+      const events = Array.isArray(result.value) ? result.value : [result.value];
+      for (const ev of events) {
+        if (!ev || seen.has(String(ev.id))) continue;
+        seen.add(String(ev.id));
+        out.push(eventToMarket(ev));
       }
     }
+
     // Fallback discovery if curated slugs missed: search soccer tag.
     if (out.length === 0) {
       try {
@@ -157,6 +167,16 @@ export async function getWorldCupMarkets(): Promise<Market[]> {
   }
 
   return out.sort((a, b) => b.heat - a.heat);
+}
+
+export async function getWorldCupMarkets(): Promise<Market[]> {
+  if (marketsCache && Date.now() - marketsCache.t < MARKET_CACHE_TTL) {
+    return marketsCache.promise;
+  }
+
+  const promise = loadWorldCupMarkets();
+  marketsCache = { t: Date.now(), promise };
+  return promise;
 }
 
 // Polymarket implied probability vs our model's champion probability — surfaces
